@@ -71,85 +71,66 @@ class General(commands.Cog):
                 )
                 await ctx.send(embed=embed)
         else:
-            # Show general help - split into multiple embeds to avoid character limits
-            
-            # Main help embed
-            embed1 = discord.Embed(
+            # Show all commands in one compact embed
+            embed = discord.Embed(
                 title="🤖 Bot Help",
-                description=f"Here are all available commands. Use `{prefix}help <command>` for detailed help.\n💡 All commands work as slash commands too! Type `/` to see them.",
+                description=f"All commands • Use `{prefix}help <command>` for details • All work as slash commands too!",
                 color=discord.Color.blue()
             )
             
-            # Basic commands
+            # Basic & Settings
             basic_commands = [
-                f"`{prefix}ping` - Check latency",
-                f"`{prefix}hello` - Say hello",
-                f"`{prefix}info` - Bot information",
-                f"`{prefix}uptime` - Bot uptime",
-                f"`{prefix}prefix` - Show current prefix",
-                f"`{prefix}setprefix <new>` - Change prefix"
+                f"`{prefix}ping`, `{prefix}hello`, `{prefix}info`, `{prefix}uptime`",
+                f"`{prefix}prefix`, `{prefix}setprefix <new>`"
             ]
-            embed1.add_field(
-                name="📋 Basic Commands",
+            embed.add_field(
+                name="📋 Basic & Settings",
                 value="\n".join(basic_commands),
                 inline=True
             )
             
-            # Moderation commands
+            # Moderation
             mod_commands = [
-                f"`{prefix}kick @user [reason]`",
-                f"`{prefix}ban @user [reason]`", 
-                f"`{prefix}unban <user>`",
-                f"`{prefix}mute @user [reason]`",
-                f"`{prefix}unmute @user`"
+                f"`{prefix}kick`, `{prefix}ban`, `{prefix}unban`",
+                f"`{prefix}mute`, `{prefix}unmute`"
             ]
-            embed1.add_field(
+            embed.add_field(
                 name="🔨 Moderation",
                 value="\n".join(mod_commands),
                 inline=True
             )
             
-            # Warning system
+            # Warnings
             warning_commands = [
                 f"`{prefix}warn @user [reason]`",
                 f"`{prefix}unwarn @user <id>`",
-                f"`{prefix}warnings [@user]`",
-                f"`{prefix}clearwarnings @user`"
+                f"`{prefix}warnings`, `{prefix}clearwarnings`"
             ]
-            embed1.add_field(
+            embed.add_field(
                 name="⚠️ Warnings",
                 value="\n".join(warning_commands),
                 inline=True
             )
             
-            await ctx.send(embed=embed1)
-            
-            # Second embed for advanced features
-            embed2 = discord.Embed(
-                title="🤖 Advanced Features",
-                color=discord.Color.blue()
-            )
-            
-            # Role management
+            # Roles
             role_commands = [
                 f"`{prefix}addrole @user @role`",
                 f"`{prefix}removerole @user @role`",
                 f"`{prefix}massrole @role add/remove target`"
             ]
-            embed2.add_field(
-                name="🎭 Role Management",
+            embed.add_field(
+                name="🎭 Roles",
                 value="\n".join(role_commands),
                 inline=True
             )
             
-            # AFK system
+            # AFK
             afk_commands = [
-                f"`{prefix}afk [reason]` - Set AFK",
-                f"`{prefix}unafk` - Remove AFK",
-                f"`{prefix}afklist` - List AFK users"
+                f"`{prefix}afk [reason]`, `{prefix}unafk`",
+                f"`{prefix}afklist`"
             ]
-            embed2.add_field(
-                name="😴 AFK System",
+            embed.add_field(
+                name="😴 AFK",
                 value="\n".join(afk_commands),
                 inline=True
             )
@@ -159,28 +140,18 @@ class General(commands.Cog):
                 f"`{prefix}massdm <message>`",
                 f"`{prefix}massdmrole @role <msg>`"
             ]
-            embed2.add_field(
+            embed.add_field(
                 name="📨 Mass DM",
                 value="\n".join(mass_dm_commands),
                 inline=True
             )
             
-            await ctx.send(embed=embed2)
-            
-            # Third embed for fun features
-            embed3 = discord.Embed(
-                title="🎉 Fun Features",
-                color=discord.Color.blue()
-            )
-            
             # Giveaways
             giveaway_commands = [
                 f"`{prefix}gstart <time> <winners> <prize>`",
-                f"`{prefix}gend <msg_id>` - End early",
-                f"`{prefix}greroll <msg_id>` - Reroll",
-                f"`{prefix}glist` - List active"
+                f"`{prefix}gend`, `{prefix}greroll`, `{prefix}glist`"
             ]
-            embed3.add_field(
+            embed.add_field(
                 name="🎉 Giveaways",
                 value="\n".join(giveaway_commands),
                 inline=True
@@ -188,25 +159,22 @@ class General(commands.Cog):
             
             # Spin Wheel
             wheel_commands = [
-                f"`{prefix}wheeladd @users`",
-                f"`{prefix}wheelremove @users`",
-                f"`{prefix}wheellist` - Show wheel",
-                f"`{prefix}spin` - Spin it!",
-                f"`{prefix}wheelclear` - Clear all"
+                f"`{prefix}wheeladd @users`, `{prefix}wheelremove`",
+                f"`{prefix}spin`, `{prefix}wheellist`, `{prefix}wheelclear`"
             ]
-            embed3.add_field(
+            embed.add_field(
                 name="🎯 Spin Wheel",
                 value="\n".join(wheel_commands),
                 inline=True
             )
             
-            embed3.add_field(
-                name="🔗 Links & Support",
-                value="Need help? Use `/help` for slash commands\nMost commands require mod permissions",
+            embed.add_field(
+                name="💡 Tip",
+                value="Most commands require mod permissions\nType `/` to see slash commands",
                 inline=True
             )
             
-            await ctx.send(embed=embed3)
+            await ctx.send(embed=embed)
     
     @commands.hybrid_command(name='info')
     async def info_command(self, ctx):
