@@ -123,7 +123,7 @@ class General(commands.Cog):
             await ctx.send(embed=embed)
     
     @commands.command(name='info')
-    async def bot_info(self, ctx):
+    async def info_command(self, ctx):
         """Show bot information"""
         embed = discord.Embed(
             title="🤖 Bot Information",
