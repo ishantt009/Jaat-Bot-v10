@@ -5,6 +5,7 @@ import json
 import os
 import logging
 from datetime import datetime
+from typing import Optional
 from utils.permissions import has_mod_permissions
 
 logger = logging.getLogger(__name__)
@@ -210,7 +211,7 @@ class Warnings(commands.Cog):
     @commands.hybrid_command(name='warnings')
     @app_commands.describe(user="The user to check warnings for")
     @commands.guild_only()
-    async def check_warnings(self, ctx, user: discord.Member = None):
+    async def check_warnings(self, ctx, user: Optional[discord.Member] = None):
         """Check warnings for a user (or yourself)"""
         if user is None:
             user = ctx.author
