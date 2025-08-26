@@ -39,6 +39,10 @@ class DiscordBot(commands.Bot):
             await self.load_extension('cogs.mass_dm')
             await self.load_extension('cogs.giveaways')
             await self.load_extension('cogs.spinwheel')
+            await self.load_extension('cogs.warnings')
+            await self.load_extension('cogs.afk')
+            await self.load_extension('cogs.roles')
+            await self.load_extension('cogs.settings')
             logger.info("All cogs loaded successfully")
         except Exception as e:
             logger.error(f"Failed to load cogs: {e}")
@@ -48,11 +52,18 @@ class DiscordBot(commands.Bot):
         logger.info(f'{self.user} has connected to Discord!')
         logger.info(f'Bot is in {len(self.guilds)} guilds')
         
+        # Sync slash commands
+        try:
+            synced = await self.tree.sync()
+            logger.info(f"Synced {len(synced)} slash commands")
+        except Exception as e:
+            logger.error(f"Failed to sync slash commands: {e}")
+        
         # Set bot status
         await self.change_presence(
             activity=discord.Activity(
                 type=discord.ActivityType.watching,
-                name=f"{os.getenv('COMMAND_PREFIX', '!')}help"
+                name=f"{os.getenv('COMMAND_PREFIX', '!')}help | /help"
             )
         )
         

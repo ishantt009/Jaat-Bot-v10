@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import time
 import platform
 import psutil
@@ -12,7 +13,7 @@ class General(commands.Cog):
         self.bot = bot
         self.start_time = time.time()
     
-    @commands.command(name='ping')
+    @commands.hybrid_command(name='ping')
     async def ping(self, ctx):
         """Check bot latency"""
         embed = discord.Embed(
@@ -22,7 +23,7 @@ class General(commands.Cog):
         )
         await ctx.send(embed=embed)
     
-    @commands.command(name='hello', aliases=['hi', 'hey'])
+    @commands.hybrid_command(name='hello', aliases=['hi', 'hey'])
     async def hello(self, ctx):
         """Say hello to the bot"""
         embed = discord.Embed(
@@ -32,8 +33,9 @@ class General(commands.Cog):
         )
         await ctx.send(embed=embed)
     
-    @commands.command(name='help')
-    async def help_command(self, ctx, *, command_name=None):
+    @commands.hybrid_command(name='help')
+    @app_commands.describe(command_name="Name of the command to get help for")
+    async def help_command(self, ctx, command_name: str = None):
         """Custom help command"""
         prefix = os.getenv('COMMAND_PREFIX', '!')
         
@@ -98,7 +100,7 @@ class General(commands.Cog):
             # Mass DM commands
             mass_dm_commands = [
                 f"`{prefix}massdm <message>` - Send DM to all members",
-                f"`{prefix}massrole <role> <message>` - Send DM to role members"
+                f"`{prefix}massdmrole <role> <message>` - Send DM to role members"
             ]
             embed.add_field(
                 name="📨 Mass DM Commands",
@@ -133,10 +135,64 @@ class General(commands.Cog):
                 inline=False
             )
             
-            embed.set_footer(text="⚠️ Moderation, Mass DM, Giveaway, and Spin Wheel commands require appropriate permissions")
+            # Warning commands
+            warning_commands = [
+                f"`{prefix}warn @user [reason]` - Warn a user",
+                f"`{prefix}unwarn @user <id>` - Remove specific warning",
+                f"`{prefix}warnings [@user]` - Check warnings",
+                f"`{prefix}clearwarnings @user` - Clear all warnings"
+            ]
+            embed.add_field(
+                name="⚠️ Warning Commands",
+                value="\n".join(warning_commands),
+                inline=False
+            )
+            
+            # AFK commands
+            afk_commands = [
+                f"`{prefix}afk [reason]` - Set yourself as AFK",
+                f"`{prefix}unafk` - Remove AFK status",
+                f"`{prefix}afklist` - List all AFK users"
+            ]
+            embed.add_field(
+                name="😴 AFK Commands",
+                value="\n".join(afk_commands),
+                inline=False
+            )
+            
+            # Role commands
+            role_commands = [
+                f"`{prefix}addrole @user @role` - Add role to user",
+                f"`{prefix}removerole @user @role` - Remove role from user",
+                f"`{prefix}massrole @role add/remove target` - Mass role management"
+            ]
+            embed.add_field(
+                name="🎭 Role Commands",
+                value="\n".join(role_commands),
+                inline=False
+            )
+            
+            # Settings commands
+            settings_commands = [
+                f"`{prefix}setprefix <new_prefix>` - Change command prefix",
+                f"`{prefix}prefix` - Show current prefix"
+            ]
+            embed.add_field(
+                name="⚙️ Settings Commands",
+                value="\n".join(settings_commands),
+                inline=False
+            )
+            
+            embed.add_field(
+                name="💡 Slash Commands",
+                value="All commands also work as slash commands! Type `/` to see them.",
+                inline=False
+            )
+            
+            embed.set_footer(text="⚠️ Most commands require appropriate permissions • All commands work with both prefix and slash commands")
             await ctx.send(embed=embed)
     
-    @commands.command(name='info')
+    @commands.hybrid_command(name='info')
     async def info_command(self, ctx):
         """Show bot information"""
         embed = discord.Embed(
@@ -169,7 +225,7 @@ class General(commands.Cog):
         
         await ctx.send(embed=embed)
     
-    @commands.command(name='uptime')
+    @commands.hybrid_command(name='uptime')
     async def uptime(self, ctx):
         """Show bot uptime"""
         current_time = time.time()

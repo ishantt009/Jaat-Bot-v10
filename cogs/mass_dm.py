@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import asyncio
 import logging
 import os
@@ -14,7 +15,8 @@ class MassDM(commands.Cog):
         self.bot = bot
         self.rate_limit = float(os.getenv('MASS_DM_RATE_LIMIT', '1'))  # Messages per second
     
-    @commands.command(name='massdm')
+    @commands.hybrid_command(name='massdm')
+    @app_commands.describe(message="The message to send to all members")
     @commands.guild_only()
     async def mass_dm(self, ctx, *, message):
         """Send a DM to all members in the server"""
@@ -72,7 +74,11 @@ class MassDM(commands.Cog):
         # Start mass DM process
         await self._send_mass_dm(ctx, confirmation_msg, message, ctx.guild.members)
     
-    @commands.command(name='massrole')
+    @commands.hybrid_command(name='massdmrole')
+    @app_commands.describe(
+        role="The role to send DMs to",
+        message="The message to send"
+    )
     @commands.guild_only()
     async def mass_dm_role(self, ctx, role: discord.Role, *, message):
         """Send a DM to all members with a specific role"""
