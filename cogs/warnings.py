@@ -148,7 +148,7 @@ class Warnings(commands.Cog):
         embed.add_field(name="📝 Reason", value=reason, inline=False)
         embed.add_field(name="📊 Total Warnings", value=f"{len(active_warnings)} warning{'s' if len(active_warnings) != 1 else ''}", inline=True)
         
-        await ctx.send(embed=embed)
+        await ctx.send(f"{user.mention}", embed=embed)
         
         # Try to DM the user
         try:
@@ -198,7 +198,7 @@ class Warnings(commands.Cog):
             embed.add_field(name="👮 Moderator", value=ctx.author.mention, inline=True)
             embed.add_field(name="📊 Remaining Warnings", value=f"{len(active_warnings)}", inline=True)
             
-            await ctx.send(embed=embed)
+            await ctx.send(f"{user.mention}", embed=embed)
             logger.info(f"{ctx.author} removed warning #{warning_id} from {user} in {ctx.guild.name}")
         else:
             embed = discord.Embed(
@@ -289,7 +289,7 @@ class Warnings(commands.Cog):
             embed.add_field(name="👤 User", value=user.mention, inline=True)
             embed.add_field(name="👮 Moderator", value=ctx.author.mention, inline=True)
             
-            await ctx.send(embed=embed)
+            await ctx.send(f"{user.mention}", embed=embed)
             logger.info(f"{ctx.author} cleared {cleared_count} warnings for {user} in {ctx.guild.name}")
         else:
             embed = discord.Embed(
