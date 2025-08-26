@@ -168,6 +168,18 @@ class General(commands.Cog):
                 inline=True
             )
             
+            # Embed Builder
+            embed_commands = [
+                f"`{prefix}embed` - Create custom embeds",
+                f"`{prefix}embedfields` - Embeds with fields",
+                f"`{prefix}say <message>` - Send as bot"
+            ]
+            embed.add_field(
+                name="🎨 Embed Builder",
+                value="\n".join(embed_commands),
+                inline=True
+            )
+            
             embed.add_field(
                 name="💡 Tip",
                 value="Most commands require mod permissions\nType `/` to see slash commands",
