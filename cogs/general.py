@@ -119,7 +119,21 @@ class General(commands.Cog):
                 inline=False
             )
             
-            embed.set_footer(text="⚠️ Moderation, Mass DM, and Giveaway commands require appropriate permissions")
+            # Spin Wheel commands
+            wheel_commands = [
+                f"`{prefix}wheeladd @users` - Add users to spin wheel",
+                f"`{prefix}wheelremove @users` - Remove users from wheel",
+                f"`{prefix}wheellist` - Show all users in wheel",
+                f"`{prefix}spin` - Spin the wheel and select winner!",
+                f"`{prefix}wheelclear` - Clear all users from wheel"
+            ]
+            embed.add_field(
+                name="🎯 Spin Wheel Commands",
+                value="\n".join(wheel_commands),
+                inline=False
+            )
+            
+            embed.set_footer(text="⚠️ Moderation, Mass DM, Giveaway, and Spin Wheel commands require appropriate permissions")
             await ctx.send(embed=embed)
     
     @commands.command(name='info')
