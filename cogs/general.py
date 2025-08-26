@@ -106,7 +106,20 @@ class General(commands.Cog):
                 inline=False
             )
             
-            embed.set_footer(text="⚠️ Moderation and Mass DM commands require appropriate permissions")
+            # Giveaway commands
+            giveaway_commands = [
+                f"`{prefix}gstart <duration> <winners> <prize>` - Start a giveaway",
+                f"`{prefix}gend <message_id>` - End a giveaway early",
+                f"`{prefix}greroll <message_id>` - Reroll giveaway winners",
+                f"`{prefix}glist` - List active giveaways"
+            ]
+            embed.add_field(
+                name="🎉 Giveaway Commands",
+                value="\n".join(giveaway_commands),
+                inline=False
+            )
+            
+            embed.set_footer(text="⚠️ Moderation, Mass DM, and Giveaway commands require appropriate permissions")
             await ctx.send(embed=embed)
     
     @commands.command(name='info')

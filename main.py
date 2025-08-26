@@ -37,6 +37,7 @@ class DiscordBot(commands.Bot):
             await self.load_extension('cogs.general')
             await self.load_extension('cogs.moderation')
             await self.load_extension('cogs.mass_dm')
+            await self.load_extension('cogs.giveaways')
             logger.info("All cogs loaded successfully")
         except Exception as e:
             logger.error(f"Failed to load cogs: {e}")
