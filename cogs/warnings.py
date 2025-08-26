@@ -127,15 +127,7 @@ class Warnings(commands.Cog):
             await ctx.send(embed=embed, ephemeral=True)
             return
         
-        # Check role hierarchy
-        if user.top_role >= ctx.author.top_role and ctx.author != ctx.guild.owner:
-            embed = discord.Embed(
-                title="❌ Role Hierarchy Error",
-                description="You cannot warn someone with a higher or equal role.",
-                color=discord.Color.red()
-            )
-            await ctx.send(embed=embed, ephemeral=True)
-            return
+        # Role hierarchy check removed - moderators can now warn users with higher or equal roles
         
         # Add warning
         warning_id = self.add_warning(ctx.guild.id, user.id, ctx.author.id, reason)
