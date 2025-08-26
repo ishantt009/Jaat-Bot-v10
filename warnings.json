@@ -7,6 +7,13 @@
         "moderator_id": 1265504464035381258,
         "timestamp": "2025-08-26T17:40:29.972685",
         "active": true
+      },
+      {
+        "id": 2,
+        "reason": "test 2",
+        "moderator_id": 1265504464035381258,
+        "timestamp": "2025-08-26T17:42:20.877466",
+        "active": true
       }
     ]
   }
