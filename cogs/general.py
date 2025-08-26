@@ -170,8 +170,8 @@ class General(commands.Cog):
             
             # Embed Builder
             embed_commands = [
-                f"`{prefix}embed` - Create custom embeds",
-                f"`{prefix}embedfields` - Embeds with fields",
+                f"`{prefix}embed` - Interactive embed builder",
+                f"`{prefix}dm <user> <msg>` - Send DM to user",
                 f"`{prefix}say <message>` - Send as bot"
             ]
             embed.add_field(
