@@ -37,7 +37,7 @@ class General(commands.Cog):
     
     @commands.hybrid_command(name='help')
     @app_commands.describe(command_name="Name of the command to get help for")
-    async def help_command(self, ctx, command_name: str = None):
+    async def help_command(self, ctx, command_name: str | None = None):
         """Custom help command"""
         # Get the correct prefix for this server
         try:
@@ -196,7 +196,7 @@ class General(commands.Cog):
                 "`/sensitive-config-channel` `/sensitive-config-status`"
             ]
             embed.add_field(
-                name="🔒 Sensitive Information",
+                name="🔒 Sensitive Information (Slash Only)",
                 value="\n".join(sensitive_commands),
                 inline=True
             )

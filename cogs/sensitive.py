@@ -275,19 +275,19 @@ class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
     
-    @commands.hybrid_command(name='sensitive-config-dm', description='[OWNER ONLY] Configure sensitive messages to be sent to your DM')
-    async def config_dm(self, ctx):
+    @app_commands.command(name='sensitive-config-dm', description='[OWNER ONLY] Configure sensitive messages to be sent to your DM')
+    async def config_dm(self, interaction: discord.Interaction):
         """Configure sensitive messages to be sent to owner's DM"""
-        logger.info(f"Config DM command called by {ctx.author.id}")
+        logger.info(f"Config DM command called by {interaction.user.id}")
         
-        if not self.is_owner(ctx.author.id):
-            logger.warning(f"Non-owner {ctx.author.id} tried to use config DM command")
+        if not self.is_owner(interaction.user.id):
+            logger.warning(f"Non-owner {interaction.user.id} tried to use config DM command")
             embed = discord.Embed(
                 title="❌ Access Denied",
                 description="Only the bot owner can use this command.",
                 color=discord.Color.red()
             )
-            await ctx.send(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
         
         config = self.load_config()
@@ -310,34 +310,35 @@ class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
                 color=discord.Color.red()
             )
         
-        await ctx.send(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
     
-    @commands.hybrid_command(name='sensitive-config-channel', description='[OWNER ONLY] Configure sensitive messages to be sent to a specific channel')
-    async def config_channel(self, ctx, channel: discord.TextChannel):
+    @app_commands.command(name='sensitive-config-channel', description='[OWNER ONLY] Configure sensitive messages to be sent to a specific channel')
+    @app_commands.describe(channel='The channel where sensitive messages should be sent')
+    async def config_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
         """Configure sensitive messages to be sent to a specific channel"""
-        logger.info(f"Config channel command called by {ctx.author.id} for channel {channel.id}")
+        logger.info(f"Config channel command called by {interaction.user.id} for channel {channel.id}")
         
-        if not self.is_owner(ctx.author.id):
-            logger.warning(f"Non-owner {ctx.author.id} tried to use config channel command")
+        if not self.is_owner(interaction.user.id):
+            logger.warning(f"Non-owner {interaction.user.id} tried to use config channel command")
             embed = discord.Embed(
                 title="❌ Access Denied",
                 description="Only the bot owner can use this command.",
                 color=discord.Color.red()
             )
-            await ctx.send(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
         
         # Check if we're in a guild and bot has permissions in the channel
-        if not ctx.guild:
+        if not interaction.guild:
             embed = discord.Embed(
                 title="❌ Guild Required",
                 description="This command must be used in a server, not in DMs.",
                 color=discord.Color.red()
             )
-            await ctx.send(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
             
-        permissions = channel.permissions_for(ctx.guild.me)
+        permissions = channel.permissions_for(interaction.guild.me)
         if not (permissions.send_messages and permissions.embed_links):
             logger.warning(f"Bot lacks permissions in channel {channel.id}")
             embed = discord.Embed(
@@ -346,13 +347,13 @@ class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
                            "Please ensure I have the required permissions and try again.",
                 color=discord.Color.red()
             )
-            await ctx.send(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
         
         config = self.load_config()
         config['routing_type'] = 'channel'
         config['channel_id'] = channel.id
-        config['guild_id'] = ctx.guild.id if ctx.guild else None
+        config['guild_id'] = interaction.guild.id if interaction.guild else None
         
         if self.save_config(config):
             logger.info(f"Successfully updated config to channel mode: {channel.id}")
@@ -369,20 +370,20 @@ class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
                 color=discord.Color.red()
             )
         
-        await ctx.send(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
     
-    @commands.hybrid_command(name='sensitive-config-status', description='[OWNER ONLY] View current sensitive message routing configuration')
-    async def config_status(self, ctx):
+    @app_commands.command(name='sensitive-config-status', description='[OWNER ONLY] View current sensitive message routing configuration')
+    async def config_status(self, interaction: discord.Interaction):
         """Show current sensitive message routing configuration"""
-        logger.info(f"Config status command called by {ctx.author.id}")
+        logger.info(f"Config status command called by {interaction.user.id}")
         
-        if not self.is_owner(ctx.author.id):
+        if not self.is_owner(interaction.user.id):
             embed = discord.Embed(
                 title="❌ Access Denied",
                 description="Only the bot owner can use this command.",
                 color=discord.Color.red()
             )
-            await ctx.send(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
         
         config = self.load_config()
@@ -430,13 +431,13 @@ class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
         
         embed.add_field(
             name="🛠️ Configuration Commands",
-            value="`!sensitive-config-dm` or `/sensitive-config-dm` - Route to your DM\n"
-                  "`!sensitive-config-channel #channel` or `/sensitive-config-channel` - Route to a channel\n"
-                  "`!sensitive-config-status` or `/sensitive-config-status` - View this status",
+            value="`/sensitive-config-dm` - Route to your DM\n"
+                  "`/sensitive-config-channel` - Route to a channel\n"
+                  "`/sensitive-config-status` - View this status",
             inline=False
         )
         
-        await ctx.send(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 async def setup(bot):
     """Setup function to add this cog to the bot"""
