@@ -123,9 +123,9 @@ async def main():
     bot = DiscordBot()
     
     # Get Discord token from environment
-    token = os.getenv('DISCORD_TOKEN')
+    token = os.getenv('DISCORD_BOT_TOKEN')
     if not token:
-        logger.error("DISCORD_TOKEN not found in environment variables!")
+        logger.error("DISCORD_BOT_TOKEN not found in environment variables!")
         return
     
     try:

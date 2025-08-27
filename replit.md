@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a comprehensive Discord moderation bot built with Python using the discord.py library. The bot provides essential server management features including moderation commands (kick, ban, mute), mass DM functionality for administrators, and general utility commands. The application is designed with a modular cog-based architecture that separates functionality into logical components for maintainability and scalability.
+A comprehensive Discord moderation bot built with Python using the discord.py library. The bot provides essential moderation commands like kick, ban, mute, warn, and purge, with features including role hierarchy enforcement, persistent data storage, logging capabilities, and 24/7 uptime support. Designed specifically for deployment on Replit with a keep-alive mechanism to ensure continuous operation.
 
 ## User Preferences
 
@@ -10,50 +10,55 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Core Framework and Structure
-- **Framework**: Built on discord.py with the commands extension for structured command handling
-- **Architecture Pattern**: Modular cog-based design that separates functionality into distinct modules
-- **Bot Class**: Custom `DiscordBot` class extending `commands.Bot` with automatic cog loading and configuration management
+### Bot Framework
+- **Core Technology**: Python with discord.py library for Discord API integration
+- **Command System**: Uses discord.py's commands extension with prefix-based commands (default: `!`)
+- **Intents Configuration**: Configured with message content, members, and guilds intents for full functionality
 
-### Command Organization
-The bot uses a cog system to organize commands into three main categories:
-- **General Cogs** (`cogs/general.py`): Basic utility commands like ping, help, and bot information
-- **Moderation Cogs** (`cogs/moderation.py`): Server management commands for kicking, banning, and muting users
-- **Mass DM Cogs** (`cogs/mass_dm.py`): Bulk messaging functionality for administrators
+### Modular Design
+- **Cog-based Architecture**: Separates moderation functionality into dedicated cogs for better organization and maintainability
+- **Database Abstraction**: Dedicated database module handles all data persistence operations
+- **Utility Functions**: Common helper functions centralized in utils module for duration parsing, embed creation, and formatting
 
-### Permission System
-- **Role-based Access Control**: Custom permission system in `utils/permissions.py` that checks for administrator and moderator permissions
-- **Hierarchical Permissions**: Server owners have full access, followed by users with administrator permissions, then users with specific moderation permissions or designated roles
-- **Environment-configurable Roles**: Admin and moderator role names can be customized via environment variables
-
-### Configuration Management
-- **Environment Variables**: Uses python-dotenv for configuration management including bot tokens, command prefixes, and role names
-- **Rate Limiting**: Configurable rate limiting for mass DM operations to prevent API abuse
-- **Intent Configuration**: Properly configured Discord intents for message content, member operations, and guild access
+### Data Persistence
+- **Database**: SQLite with aiosqlite for asynchronous operations
+- **Schema Design**: 
+  - Moderation logs table for tracking all moderation actions
+  - Warnings table for user warning system with active/inactive status
+- **Connection Management**: Singleton pattern for database connections with proper connection lifecycle management
 
 ### Logging and Monitoring
-- **Comprehensive Logging**: Multi-level logging system with separate handlers for console output, general logs, and error logs
-- **Log Rotation**: Automatic log file rotation to prevent disk space issues
-- **Structured Logging**: Consistent log formatting with timestamps, log levels, and module identification
+- **Multi-level Logging**: File and console logging with configurable levels
+- **Action Logging**: All moderation actions logged to database and optional Discord log channels
+- **Error Handling**: Comprehensive error handling with graceful degradation for failed operations
 
-### Error Handling and Safety
-- **Permission Validation**: All moderation commands include permission checks before execution
-- **Confirmation Systems**: Mass DM operations require explicit user confirmation to prevent accidental bulk messages
-- **Role Management**: Automatic creation and configuration of muted roles with proper channel permissions
+### Deployment Architecture
+- **Keep-alive System**: Flask web server prevents Replit from sleeping the application
+- **Environment Configuration**: Uses environment variables for sensitive configuration like bot tokens
+- **24/7 Operation**: Designed for continuous operation with automatic restart capabilities
+
+### Permission System
+- **Role Hierarchy**: Enforces Discord role hierarchy to prevent unauthorized moderation actions
+- **Permission Checks**: Validates both user and bot permissions before executing commands
+- **Security**: Prevents privilege escalation through role position validation
 
 ## External Dependencies
 
-### Core Libraries
-- **discord.py**: Primary Discord API wrapper for bot functionality and event handling
-- **python-dotenv**: Environment variable management for secure configuration storage
-- **psutil**: System monitoring for bot performance metrics and uptime tracking
+### Core Dependencies
+- **discord.py**: Primary Discord API wrapper for bot functionality
+- **aiosqlite**: Asynchronous SQLite database operations
+- **python-dotenv**: Environment variable loading for configuration management
 
-### Discord API Integration
-- **Bot Token Authentication**: Requires Discord bot token from Discord Developer Portal
-- **Gateway Intents**: Uses message content, members, and guilds intents for full functionality
-- **Rate Limiting Compliance**: Built-in respect for Discord API rate limits, especially for bulk operations
+### Web Server
+- **Flask**: Lightweight web server for keep-alive functionality and status monitoring
+- **Threading**: Background thread management for concurrent web server operation
 
-### Runtime Environment
-- **Python 3.8+**: Minimum Python version requirement for async/await support and modern language features
-- **File System**: Local file system used for log storage and rotation management
-- **Process Monitoring**: Integration with system process monitoring for uptime and performance tracking
+### Discord Platform
+- **Discord Developer Portal**: Bot registration and token management
+- **Discord Permissions**: Requires specific server permissions (kick, ban, moderate members, manage messages)
+- **Discord Channels**: Integration with mod-logs channels for action logging
+
+### Replit Platform
+- **Environment Variables**: Secure storage of bot tokens and configuration
+- **File System**: Persistent storage for SQLite database and log files
+- **Network Access**: Outbound connections to Discord API and webhook endpoints
