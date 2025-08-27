@@ -171,12 +171,14 @@ class General(commands.Cog):
             # Embed Builder
             embed_commands = [
                 f"`{prefix}embed` - Interactive embed builder",
-                f"`{prefix}dm <user> <msg>` - Send DM to user",
-                f"`{prefix}say <message>` - Send as bot",
-                f"`{prefix}saychannel #channel <msg>`"
+                f"`{prefix}embeds` - List your saved embeds",
+                f"`{prefix}viewembed <id>` - View saved embed",
+                f"`{prefix}say <msg/embed:id>` - Send as bot",
+                f"`{prefix}saychannel #ch <msg/embed:id>`",
+                f"`{prefix}dm <user> <msg>` - Send DM to user"
             ]
             embed.add_field(
-                name="🎨 Embed Builder",
+                name="🎨 Embed Builder & IDs",
                 value="\n".join(embed_commands),
                 inline=True
             )

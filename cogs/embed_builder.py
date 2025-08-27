@@ -5,11 +5,112 @@ import json
 import logging
 import asyncio
 import os
+import uuid
 from datetime import datetime
 from typing import Optional
 from utils.permissions import has_mod_permissions
 
 logger = logging.getLogger(__name__)
+
+class EmbedStorage:
+    """Manages saving and loading embeds with unique IDs"""
+    
+    def __init__(self):
+        self.storage_file = "data/saved_embeds.json"
+        self.ensure_storage_dir()
+    
+    def ensure_storage_dir(self):
+        """Ensure the data directory exists"""
+        os.makedirs("data", exist_ok=True)
+        if not os.path.exists(self.storage_file):
+            with open(self.storage_file, 'w') as f:
+                json.dump({}, f)
+    
+    def save_embed(self, embed_data, name=None, user_id=None):
+        """Save an embed and return its unique ID"""
+        embed_id = str(uuid.uuid4())[:8]  # Short 8-character ID
+        
+        embed_dict = {
+            'id': embed_id,
+            'name': name or f"Embed {embed_id}",
+            'created_by': user_id,
+            'created_at': datetime.now().isoformat(),
+            'data': {
+                'title': embed_data.title,
+                'description': embed_data.description,
+                'color': embed_data.color,
+                'footer': embed_data.footer,
+                'footer_icon': embed_data.footer_icon,
+                'author': embed_data.author,
+                'author_icon': embed_data.author_icon,
+                'thumbnail': embed_data.thumbnail,
+                'image': embed_data.image,
+                'fields': embed_data.fields,
+                'timestamp': embed_data.timestamp
+            }
+        }
+        
+        # Load existing embeds
+        with open(self.storage_file, 'r') as f:
+            embeds = json.load(f)
+        
+        # Save new embed
+        embeds[embed_id] = embed_dict
+        
+        with open(self.storage_file, 'w') as f:
+            json.dump(embeds, f, indent=2)
+        
+        return embed_id
+    
+    def load_embed(self, embed_id):
+        """Load an embed by ID"""
+        try:
+            with open(self.storage_file, 'r') as f:
+                embeds = json.load(f)
+            
+            if embed_id in embeds:
+                return embeds[embed_id]
+            return None
+        except:
+            return None
+    
+    def get_all_embeds(self, user_id=None):
+        """Get all saved embeds, optionally filtered by user"""
+        try:
+            with open(self.storage_file, 'r') as f:
+                embeds = json.load(f)
+            
+            if user_id:
+                return {k: v for k, v in embeds.items() if v.get('created_by') == user_id}
+            return embeds
+        except:
+            return {}
+    
+    def delete_embed(self, embed_id, user_id=None):
+        """Delete an embed by ID"""
+        try:
+            with open(self.storage_file, 'r') as f:
+                embeds = json.load(f)
+            
+            if embed_id in embeds:
+                # Check if user owns the embed or is authorized
+                embed_data = embeds[embed_id]
+                if user_id and embed_data.get('created_by') != user_id:
+                    return False, "You can only delete embeds you created."
+                
+                del embeds[embed_id]
+                
+                with open(self.storage_file, 'w') as f:
+                    json.dump(embeds, f, indent=2)
+                
+                return True, "Embed deleted successfully."
+            
+            return False, "Embed not found."
+        except:
+            return False, "Error deleting embed."
+
+# Global embed storage instance
+embed_storage = EmbedStorage()
 
 class EmbedData:
     def __init__(self):
@@ -423,18 +524,23 @@ class EmbedBuilderView(discord.ui.View):
         await interaction.response.defer()
         await self.update_embed(interaction)
     
-    @discord.ui.button(label='🚀 Send Embed', style=discord.ButtonStyle.success, row=2)
+    @discord.ui.button(label='💾 Save & Send', style=discord.ButtonStyle.success, row=2)
     async def send_embed(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not any([self.embed_data.title, self.embed_data.description, self.embed_data.fields]):
             await interaction.response.send_message("❌ Embed must have at least a title, description, or fields!", ephemeral=True)
             return
         
+        # Save embed with ID
+        embed_id = embed_storage.save_embed(self.embed_data, user_id=interaction.user.id)
+        
         embed = self.embed_data.to_embed()
+        embed.set_footer(text=f"{embed.footer.text if embed.footer else ''} • ID: {embed_id}".strip(" • "))
+        
         channel = interaction.channel
         
         try:
             await channel.send(embed=embed)
-            await interaction.response.send_message("✅ Embed sent successfully!", ephemeral=True)
+            await interaction.response.send_message(f"✅ Embed sent and saved with ID: `{embed_id}`\n\nYou can now use this embed in any message command with: `embed:{embed_id}`", ephemeral=True)
         except discord.HTTPException as e:
             await interaction.response.send_message(f"❌ Failed to send embed: {str(e)}", ephemeral=True)
     
@@ -527,10 +633,10 @@ class EmbedBuilder(commands.Cog):
         await ctx.send(embed=embed, view=view)
     
     @commands.hybrid_command(name='say')
-    @app_commands.describe(message="Message to send as the bot")
+    @app_commands.describe(message="Message or embed ID (embed:ID) to send as the bot")
     @commands.guild_only()
     async def say_message(self, ctx, *, message: str):
-        """Send a message as the bot"""
+        """Send a message or embed as the bot"""
         # Permission check
         if not has_mod_permissions(ctx.author, ctx.guild):
             embed = discord.Embed(
@@ -541,8 +647,20 @@ class EmbedBuilder(commands.Cog):
             await ctx.send(embed=embed, ephemeral=True)
             return
         
-        # Check message length
-        if len(message) > 2000:
+        # Parse message or embed ID
+        msg_type, content, embed_id = self.parse_message_or_embed(message)
+        
+        if msg_type == 'error':
+            embed = discord.Embed(
+                title="❌ Error",
+                description=content,
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, ephemeral=True)
+            return
+        
+        # Check message length for text messages
+        if msg_type == 'text' and len(content) > 2000:
             embed = discord.Embed(
                 title="❌ Message Too Long",
                 description="Message cannot exceed 2000 characters.",
@@ -558,14 +676,19 @@ class EmbedBuilder(commands.Cog):
             except:
                 pass
         
-        # Send the message
+        # Send the message or embed
         try:
-            await ctx.send(message)
+            if msg_type == 'embed':
+                await ctx.send(embed=content)
+            else:
+                await ctx.send(content)
+            
             if ctx.interaction:
                 # Send confirmation for slash command
+                confirmation_text = f"Embed `{embed_id}` posted successfully!" if msg_type == 'embed' else "Your message has been posted."
                 embed = discord.Embed(
                     title="✅ Message Sent",
-                    description="Your message has been posted.",
+                    description=confirmation_text,
                     color=discord.Color.green()
                 )
                 await ctx.send(embed=embed, ephemeral=True)
@@ -661,11 +784,11 @@ class EmbedBuilder(commands.Cog):
     @commands.hybrid_command(name='saychannel')
     @app_commands.describe(
         channel="The channel to send the message to",
-        message="Message to send as the bot"
+        message="Message or embed ID (embed:ID) to send as the bot"
     )
     @commands.guild_only()
     async def say_channel(self, ctx, channel: discord.TextChannel, *, message: str):
-        """Send a message to a specific channel as the bot"""
+        """Send a message or embed to a specific channel as the bot"""
         # Permission check
         if not has_mod_permissions(ctx.author, ctx.guild):
             embed = discord.Embed(
@@ -676,8 +799,20 @@ class EmbedBuilder(commands.Cog):
             await ctx.send(embed=embed, ephemeral=True)
             return
         
-        # Check message length
-        if len(message) > 2000:
+        # Parse message or embed ID
+        msg_type, content, embed_id = self.parse_message_or_embed(message)
+        
+        if msg_type == 'error':
+            embed = discord.Embed(
+                title="❌ Error",
+                description=content,
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, ephemeral=True)
+            return
+        
+        # Check message length for text messages
+        if msg_type == 'text' and len(content) > 2000:
             embed = discord.Embed(
                 title="❌ Message Too Long",
                 description="Message cannot exceed 2000 characters.",
@@ -703,21 +838,27 @@ class EmbedBuilder(commands.Cog):
             except:
                 pass
         
-        # Send the message to target channel
+        # Send the message or embed to target channel
         try:
-            await channel.send(message)
+            if msg_type == 'embed':
+                await channel.send(embed=content)
+            else:
+                await channel.send(content)
             
             # Send confirmation
+            confirmation_text = f"Embed `{embed_id}` posted to {channel.mention}!" if msg_type == 'embed' else f"Your message has been posted to {channel.mention}."
             embed = discord.Embed(
                 title="✅ Message Sent",
-                description=f"Your message has been posted to {channel.mention}.",
+                description=confirmation_text,
                 color=discord.Color.green()
             )
-            embed.add_field(
-                name="Message Preview",
-                value=message[:100] + ("..." if len(message) > 100 else ""),
-                inline=False
-            )
+            
+            if msg_type == 'text':
+                embed.add_field(
+                    name="Message Preview",
+                    value=content[:100] + ("..." if len(content) > 100 else ""),
+                    inline=False
+                )
             
             if ctx.interaction:
                 await ctx.send(embed=embed, ephemeral=True)
@@ -737,6 +878,167 @@ class EmbedBuilder(commands.Cog):
                 color=discord.Color.red()
             )
             await ctx.send(embed=embed, ephemeral=True)
+    
+    def parse_message_or_embed(self, message_text):
+        """Parse message text to check if it's an embed ID or regular text"""
+        if message_text.startswith('embed:'):
+            embed_id = message_text[6:].strip()
+            embed_data = embed_storage.load_embed(embed_id)
+            if embed_data:
+                # Convert back to EmbedData object
+                data = embed_data['data']
+                embed_obj = EmbedData()
+                embed_obj.title = data.get('title')
+                embed_obj.description = data.get('description')
+                embed_obj.color = data.get('color', 0x2F3136)
+                embed_obj.footer = data.get('footer')
+                embed_obj.footer_icon = data.get('footer_icon')
+                embed_obj.author = data.get('author')
+                embed_obj.author_icon = data.get('author_icon')
+                embed_obj.thumbnail = data.get('thumbnail')
+                embed_obj.image = data.get('image')
+                embed_obj.fields = data.get('fields', [])
+                embed_obj.timestamp = data.get('timestamp', False)
+                
+                embed = embed_obj.to_embed()
+                # Add ID to footer
+                current_footer = embed.footer.text if embed.footer else ""
+                embed.set_footer(text=f"{current_footer} • ID: {embed_id}".strip(" • "))
+                return ('embed', embed, embed_id)
+            else:
+                return ('error', f"❌ Embed ID `{embed_id}` not found.", None)
+        else:
+            return ('text', message_text, None)
+    
+    @commands.hybrid_command(name='embeds')
+    @commands.guild_only()
+    async def list_embeds(self, ctx):
+        """List your saved embeds"""
+        if not has_mod_permissions(ctx.author, ctx.guild):
+            embed = discord.Embed(
+                title="❌ Missing Permissions",
+                description="You need moderator permissions to use this command.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, ephemeral=True)
+            return
+        
+        user_embeds = embed_storage.get_all_embeds(ctx.author.id)
+        
+        if not user_embeds:
+            embed = discord.Embed(
+                title="📋 Your Saved Embeds",
+                description="You haven't saved any embeds yet.\n\nUse the embed builder (`!embed`) to create and save embeds!",
+                color=discord.Color.blue()
+            )
+            await ctx.send(embed=embed)
+            return
+        
+        embed = discord.Embed(
+            title="📋 Your Saved Embeds",
+            description=f"You have **{len(user_embeds)}** saved embeds:",
+            color=discord.Color.blue()
+        )
+        
+        for embed_id, embed_data in list(user_embeds.items())[:10]:  # Show first 10
+            title = embed_data['data'].get('title', 'No Title')
+            created_at = datetime.fromisoformat(embed_data['created_at']).strftime("%m/%d/%Y")
+            embed.add_field(
+                name=f"🆔 `{embed_id}`",
+                value=f"**{title[:50]}{'...' if len(title) > 50 else ''}**\nCreated: {created_at}",
+                inline=True
+            )
+        
+        if len(user_embeds) > 10:
+            embed.add_field(
+                name="➕ More",
+                value=f"And {len(user_embeds) - 10} more...",
+                inline=True
+            )
+        
+        embed.add_field(
+            name="💡 How to Use",
+            value="Use `embed:ID` in any message command\nExample: `!say embed:abc123`",
+            inline=False
+        )
+        
+        await ctx.send(embed=embed)
+    
+    @commands.hybrid_command(name='viewembed')
+    @app_commands.describe(embed_id="The ID of the embed to view")
+    @commands.guild_only()
+    async def view_embed(self, ctx, embed_id: str):
+        """View a specific saved embed"""
+        if not has_mod_permissions(ctx.author, ctx.guild):
+            embed = discord.Embed(
+                title="❌ Missing Permissions",
+                description="You need moderator permissions to use this command.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, ephemeral=True)
+            return
+        
+        embed_data = embed_storage.load_embed(embed_id)
+        
+        if not embed_data:
+            embed = discord.Embed(
+                title="❌ Embed Not Found",
+                description=f"No embed found with ID `{embed_id}`.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+            return
+        
+        # Convert to embed and display
+        data = embed_data['data']
+        embed_obj = EmbedData()
+        embed_obj.title = data.get('title')
+        embed_obj.description = data.get('description')
+        embed_obj.color = data.get('color', 0x2F3136)
+        embed_obj.footer = data.get('footer')
+        embed_obj.footer_icon = data.get('footer_icon')
+        embed_obj.author = data.get('author')
+        embed_obj.author_icon = data.get('author_icon')
+        embed_obj.thumbnail = data.get('thumbnail')
+        embed_obj.image = data.get('image')
+        embed_obj.fields = data.get('fields', [])
+        embed_obj.timestamp = data.get('timestamp', False)
+        
+        embed = embed_obj.to_embed()
+        embed.set_footer(text=f"{embed.footer.text if embed.footer else ''} • ID: {embed_id}".strip(" • "))
+        
+        info_embed = discord.Embed(
+            title="👀 Embed Preview",
+            description=f"**ID:** `{embed_id}`\n**Created:** {datetime.fromisoformat(embed_data['created_at']).strftime('%B %d, %Y')}\n**Creator:** <@{embed_data.get('created_by')}>\n\n**Preview:**",
+            color=discord.Color.blue()
+        )
+        
+        await ctx.send(embed=info_embed)
+        await ctx.send(embed=embed)
+    
+    @commands.hybrid_command(name='deleteembed')
+    @app_commands.describe(embed_id="The ID of the embed to delete")
+    @commands.guild_only()
+    async def delete_embed(self, ctx, embed_id: str):
+        """Delete a saved embed"""
+        if not has_mod_permissions(ctx.author, ctx.guild):
+            embed = discord.Embed(
+                title="❌ Missing Permissions",
+                description="You need moderator permissions to use this command.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, ephemeral=True)
+            return
+        
+        success, message = embed_storage.delete_embed(embed_id, ctx.author.id)
+        
+        embed = discord.Embed(
+            title="✅ Success" if success else "❌ Error",
+            description=message,
+            color=discord.Color.green() if success else discord.Color.red()
+        )
+        
+        await ctx.send(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(EmbedBuilder(bot))
