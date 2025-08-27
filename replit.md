@@ -1,8 +1,8 @@
-# Discord Bot Project
+# Discord Bot Development Environment
 
 ## Overview
 
-This is a Discord bot application built with Python using the discord.py library. The bot provides basic utility commands and is designed with a modular architecture for easy expansion. It features a command-based system with configurable prefixes, comprehensive logging, and environment-based configuration management.
+A comprehensive Discord bot framework built with Python and discord.py, featuring a modular cog-based architecture. The project provides a complete foundation for building Discord bots with built-in moderation tools, event handling, logging systems, and extensible command structures. The bot supports both development and production deployments with configurable features and robust error handling.
 
 ## User Preferences
 
@@ -10,49 +10,54 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Core Architecture
-- **Bot Framework**: Built on discord.py with the commands extension for structured command handling
-- **Configuration Management**: Centralized configuration system using environment variables with the `python-dotenv` library
-- **Modular Command System**: Commands are organized into separate modules (cogs) that can be loaded dynamically
-- **Logging System**: Custom logging setup with both console and file output capabilities
+### Application Structure
+The bot follows a modular architecture pattern using discord.py's cog system:
 
-### Command Structure
-- **Cog-based Organization**: Commands are grouped into logical modules (BasicCommands, UtilityCommands) using discord.py's Cog system
-- **Dynamic Loading**: Command modules are loaded at startup through the bot's setup hook
-- **Command Categories**: 
-  - Basic commands (ping, info) for bot status and health checks
-  - Utility commands (echo, say, userinfo) for general server functionality
+- **Main Bot Class (`bot/bot.py`)**: Central bot instance that manages initialization, event setup, and cog loading
+- **Configuration Management (`bot/config.py`)**: Centralized configuration using environment variables with validation and type checking
+- **Modular Commands**: Organized into separate cogs for different functionality domains (general, moderation, events)
+- **Utility Layer**: Shared helper functions and logging infrastructure
 
-### Configuration Design
-- **Environment-first Approach**: All configuration values are loaded from environment variables with sensible defaults
-- **Validation System**: Configuration validation ensures required values are present before bot startup
-- **Flexible Settings**: Support for debug mode, custom command prefixes, owner-only commands, and database URLs for future expansion
+### Command Organization
+Commands are organized into logical cogs:
 
-### Error Handling & Logging
-- **Structured Logging**: Comprehensive logging system with configurable levels and file output
-- **Graceful Failures**: Command loading failures are logged but don't prevent bot startup
-- **Discord.py Integration**: Proper logging configuration to reduce noise from the discord.py library
+- **General Cog**: Basic utility commands (ping, info, stats)
+- **Moderation Cog**: Administrative commands with permission checking and role hierarchy validation
+- **Events Cog**: Discord event handlers for member join/leave, message events, and server activities
 
-### Bot Permissions & Intents
-- **Intent Configuration**: Explicitly configured intents for message content, guilds, and guild messages
-- **Permission-aware**: Commands designed to handle permission errors gracefully
+### Logging System
+Comprehensive logging architecture with:
+
+- **Dual Output**: Both console and file logging support
+- **Structured Formatting**: Different formatters for console vs file output
+- **Configurable Levels**: Environment-controlled log levels
+- **Centralized Management**: Single setup function for consistent logging across all modules
+
+### Security & Permissions
+- **Environment-based Configuration**: Sensitive data stored in environment variables
+- **Permission Validation**: Role-based permission checking for moderation commands
+- **Hierarchy Enforcement**: Prevents users from moderating higher-ranked members
+
+### Error Handling
+- **Graceful Degradation**: Proper error handling for missing permissions or invalid operations
+- **User-friendly Messages**: Clear feedback for command failures
+- **Comprehensive Logging**: Detailed error tracking for debugging
 
 ## External Dependencies
 
-### Core Libraries
-- **discord.py**: Primary Discord API wrapper for bot functionality
-- **python-dotenv**: Environment variable management for configuration
-- **psutil**: System information gathering for bot status commands
-- **asyncio**: Asynchronous programming support (built-in Python library)
+### Core Framework
+- **discord.py**: Primary Discord API library for bot functionality
+- **python-dotenv**: Environment variable management from .env files
 
-### System Dependencies
-- **Python 3.8+**: Required for discord.py compatibility and modern async features
-- **Operating System**: Cross-platform support through psutil for system information
-
-### Optional Services
-- **Database Support**: Architecture prepared for database integration (DATABASE_URL configuration available)
-- **Discord Developer Portal**: Requires bot token from Discord application registration
+### System Utilities
+- **psutil**: System information gathering for bot stats and monitoring
+- **asyncio**: Asynchronous programming support for Discord operations
 
 ### Development Tools
-- **Logging Framework**: Built-in Python logging with custom configuration
-- **Environment Files**: .env file support for local development configuration
+- **logging**: Python's built-in logging framework for comprehensive log management
+- **pathlib**: Modern path handling for cross-platform file operations
+
+### Discord Integration
+- **Discord Intents**: Message content, member, and guild intents for full functionality
+- **Bot Permissions**: Configurable permission system for moderation features
+- **Event Handling**: Real-time Discord event processing and response

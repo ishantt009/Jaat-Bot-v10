@@ -19,7 +19,7 @@ args = "Discord Bot"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "discord_bot_test"
+args = "discord_bot"
 
 [[workflows.workflow]]
 name = "Discord Bot"
@@ -33,9 +33,9 @@ args = "pip install discord.py python-dotenv psutil && python main.py"
 outputType = "console"
 
 [[workflows.workflow]]
-name = "discord_bot_test"
+name = "discord_bot"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pip install discord.py python-dotenv psutil"
+args = "pip install discord.py python-dotenv psutil && python main.py"
