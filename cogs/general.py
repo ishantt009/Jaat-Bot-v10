@@ -137,7 +137,8 @@ class General(commands.Cog):
             # Mass DM
             mass_dm_commands = [
                 f"`{prefix}massdm <message>`",
-                f"`{prefix}massdmrole @role <msg>`"
+                f"`{prefix}massdmrole @role <msg>`",
+                f"`{prefix}dmusers @user1 @user2 <msg>`"
             ]
             embed.add_field(
                 name="📨 Mass DM",

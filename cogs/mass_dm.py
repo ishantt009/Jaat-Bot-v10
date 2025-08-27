@@ -149,6 +149,98 @@ class MassDM(commands.Cog):
         # Start mass DM process
         await self._send_mass_dm(ctx, confirmation_msg, message, role_members)
     
+    @commands.hybrid_command(name='dmusers')
+    @app_commands.describe(
+        users="Mention the users to send DMs to (space-separated)",
+        message="The message to send"
+    )
+    @commands.guild_only()
+    async def dm_users(self, ctx, users: commands.Greedy[discord.Member], *, message):
+        """Send a DM to specific mentioned users"""
+        # Permission check - only admins can use mass DM
+        if not has_admin_permissions(ctx.author, ctx.guild):
+            embed = discord.Embed(
+                title="❌ Missing Permissions",
+                description="You need administrator permissions to use this command.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+            return
+        
+        # Check if users were provided
+        if not users:
+            embed = discord.Embed(
+                title="❌ No Users Specified",
+                description="Please mention the users you want to send DMs to.\n\nExample: `!dmusers @user1 @user2 @user3 Your message here`",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+            return
+        
+        # Filter out bots and duplicates
+        valid_users = []
+        for user in users:
+            if not user.bot and user not in valid_users:
+                valid_users.append(user)
+        
+        if not valid_users:
+            embed = discord.Embed(
+                title="❌ No Valid Users",
+                description="No valid human users found to send DMs to.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+            return
+        
+        # Confirmation embed
+        user_list = ", ".join([user.mention for user in valid_users[:10]])
+        if len(valid_users) > 10:
+            user_list += f"\n... and {len(valid_users) - 10} more"
+        
+        embed = discord.Embed(
+            title="⚠️ DM Users Confirmation",
+            description=f"Are you sure you want to send this message to **{len(valid_users)}** users?",
+            color=discord.Color.orange()
+        )
+        embed.add_field(name="Message Preview", value=message[:1000] + ("..." if len(message) > 1000 else ""), inline=False)
+        embed.add_field(name="Recipients", value=user_list, inline=False)
+        embed.add_field(name="Server", value=ctx.guild.name, inline=True)
+        embed.add_field(name="Requested by", value=ctx.author.mention, inline=True)
+        embed.set_footer(text="React with ✅ to confirm or ❌ to cancel (30 seconds)")
+        
+        confirmation_msg = await ctx.send(embed=embed)
+        await confirmation_msg.add_reaction("✅")
+        await confirmation_msg.add_reaction("❌")
+        
+        def check(reaction, user):
+            return (user == ctx.author and 
+                   str(reaction.emoji) in ["✅", "❌"] and 
+                   reaction.message.id == confirmation_msg.id)
+        
+        try:
+            reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
+            
+            if str(reaction.emoji) == "❌":
+                embed = discord.Embed(
+                    title="❌ DM Users Cancelled",
+                    description="DM users operation has been cancelled.",
+                    color=discord.Color.red()
+                )
+                await confirmation_msg.edit(embed=embed)
+                return
+            
+        except asyncio.TimeoutError:
+            embed = discord.Embed(
+                title="⏰ Timeout",
+                description="DM users confirmation timed out.",
+                color=discord.Color.red()
+            )
+            await confirmation_msg.edit(embed=embed)
+            return
+        
+        # Start DM process
+        await self._send_mass_dm(ctx, confirmation_msg, message, valid_users)
+    
     async def _send_mass_dm(self, ctx, status_msg, message, members):
         """Internal method to handle the mass DM sending process"""
         # Filter out bots
