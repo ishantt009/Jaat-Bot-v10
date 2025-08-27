@@ -3,7 +3,6 @@ from discord.ext import commands
 from discord import app_commands
 import time
 import platform
-import psutil
 import os
 
 class General(commands.Cog):
@@ -208,11 +207,9 @@ class General(commands.Cog):
             inline=True
         )
         
-        # Memory usage
-        memory_usage = psutil.virtual_memory().percent
         embed.add_field(
-            name="💾 Memory Usage",
-            value=f"{memory_usage:.1f}%",
+            name="⏰ Uptime",
+            value=f"{int((time.time() - self.start_time) // 86400)}d {int(((time.time() - self.start_time) % 86400) // 3600)}h",
             inline=True
         )
         
