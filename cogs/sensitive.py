@@ -4,12 +4,48 @@ from discord import app_commands
 from datetime import datetime
 import os
 import asyncio
+import json
 
 class SensitiveCommands(commands.Cog):
     """Sensitive information handling commands"""
     
     def __init__(self, bot):
         self.bot = bot
+        self.config_file = 'data/sensitive_config.json'
+    
+    def load_config(self):
+        """Load configuration from file"""
+        try:
+            with open(self.config_file, 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            # Return default config if file doesn't exist
+            return {
+                "routing_type": "dm",
+                "channel_id": None,
+                "guild_id": None
+            }
+        except Exception:
+            return {
+                "routing_type": "dm", 
+                "channel_id": None,
+                "guild_id": None
+            }
+    
+    def save_config(self, config):
+        """Save configuration to file"""
+        try:
+            os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
+            with open(self.config_file, 'w') as f:
+                json.dump(config, f, indent=2)
+            return True
+        except Exception:
+            return False
+    
+    def is_owner(self, user_id):
+        """Check if user is the bot owner"""
+        owner_id = int(os.getenv('OWNER_ID', 0)) if os.getenv('OWNER_ID') else None
+        return owner_id == user_id
     
     @app_commands.command(name='sensitive', description='Send private information securely to the bot owner')
     @app_commands.describe(
@@ -29,34 +65,17 @@ class SensitiveCommands(commands.Cog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
         
-        # Get bot owner
-        try:
-            owner = await self.bot.fetch_user(owner_id)
-        except discord.NotFound:
-            embed = discord.Embed(
-                title="❌ Error",
-                description="Bot owner not found. Please contact an administrator.",
-                color=discord.Color.red()
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-        except Exception as e:
-            embed = discord.Embed(
-                title="❌ Error",
-                description="An error occurred while processing your request. Please try again later.",
-                color=discord.Color.red()
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
+        # Load routing configuration
+        config = self.load_config()
         
-        # Create embed for the owner
-        owner_embed = discord.Embed(
+        # Create embed with sensitive information
+        info_embed = discord.Embed(
             title="🔒 Sensitive Information Received",
             color=discord.Color.orange(),
             timestamp=datetime.utcnow()
         )
         
-        owner_embed.add_field(
+        info_embed.add_field(
             name="👤 From User",
             value=f"**Username:** {interaction.user.name}\n"
                   f"**Display Name:** {interaction.user.display_name}\n"
@@ -66,7 +85,7 @@ class SensitiveCommands(commands.Cog):
         
         if interaction.guild:
             channel_name = getattr(interaction.channel, 'name', 'Unknown Channel')
-            owner_embed.add_field(
+            info_embed.add_field(
                 name="🏢 Server Information",
                 value=f"**Server:** {interaction.guild.name}\n"
                       f"**Server ID:** {interaction.guild.id}\n"
@@ -74,13 +93,13 @@ class SensitiveCommands(commands.Cog):
                 inline=False
             )
         else:
-            owner_embed.add_field(
+            info_embed.add_field(
                 name="📱 Location",
                 value="Direct Message",
                 inline=False
             )
         
-        owner_embed.add_field(
+        info_embed.add_field(
             name="📝 Sensitive Information",
             value=f"```\n{information}\n```",
             inline=False
@@ -88,43 +107,83 @@ class SensitiveCommands(commands.Cog):
         
         # Add user avatar if available
         if interaction.user.avatar:
-            owner_embed.set_thumbnail(url=interaction.user.avatar.url)
+            info_embed.set_thumbnail(url=interaction.user.avatar.url)
         
-        owner_embed.set_footer(
+        info_embed.set_footer(
             text="Sensitive Information System",
             icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None
         )
         
-        # Try to send to owner
+        # Route message based on configuration
+        success = False
+        destination = "unknown"
+        
         try:
-            await owner.send(embed=owner_embed)
+            if config['routing_type'] == 'channel' and config['channel_id']:
+                # Send to configured channel
+                channel = self.bot.get_channel(config['channel_id'])
+                if channel:
+                    # Check if bot has permissions
+                    permissions = channel.permissions_for(channel.guild.me)
+                    if permissions.send_messages and permissions.embed_links:
+                        await channel.send(embed=info_embed)
+                        success = True
+                        destination = f"#{channel.name} in {channel.guild.name}"
+                    else:
+                        # Fallback to DM if no permissions
+                        owner = await self.bot.fetch_user(owner_id)
+                        await owner.send(embed=info_embed)
+                        success = True
+                        destination = "bot owner's DM (fallback due to channel permissions)"
+                else:
+                    # Channel not found, fallback to DM
+                    owner = await self.bot.fetch_user(owner_id)
+                    await owner.send(embed=info_embed)
+                    success = True
+                    destination = "bot owner's DM (fallback: channel not found)"
+            else:
+                # Send to owner's DM (default)
+                owner = await self.bot.fetch_user(owner_id)
+                await owner.send(embed=info_embed)
+                success = True
+                destination = "bot owner's DM"
             
-            # Confirm to user (without revealing the information)
-            user_embed = discord.Embed(
-                title="✅ Information Sent Successfully",
-                description="Your sensitive information has been securely delivered to the bot owner. "
-                           "They will review it and may contact you if necessary.",
-                color=discord.Color.green()
-            )
-            
-            user_embed.add_field(
-                name="🔐 Privacy Notice",
-                value="• Your information was sent directly to the bot owner\n"
-                      "• This conversation is private and secure\n"
-                      "• The bot owner may reach out to you if needed",
-                inline=False
-            )
-            
-            user_embed.set_footer(text="Your privacy is important to us")
-            
-            await interaction.response.send_message(embed=user_embed, ephemeral=True)
-            
+            if success:
+                # Confirm to user (without revealing the information)
+                user_embed = discord.Embed(
+                    title="✅ Information Sent Successfully",
+                    description=f"Your sensitive information has been securely delivered to {destination}. "
+                               "The bot owner will review it and may contact you if necessary.",
+                    color=discord.Color.green()
+                )
+                
+                user_embed.add_field(
+                    name="🔐 Privacy Notice",
+                    value="• Your information was sent securely to the bot owner\n"
+                          "• This conversation is private and secure\n"
+                          "• The bot owner may reach out to you if needed",
+                    inline=False
+                )
+                
+                user_embed.set_footer(text="Your privacy is important to us")
+                await interaction.response.send_message(embed=user_embed, ephemeral=True)
+                
         except discord.Forbidden:
-            # Owner has DMs disabled
+            # Delivery failed due to permissions
             embed = discord.Embed(
                 title="❌ Delivery Failed",
-                description="Unable to deliver your information. The bot owner's DMs may be disabled. "
-                           "Please try contacting them through other means.",
+                description="Unable to deliver your information due to permission restrictions. "
+                           "Please contact the bot owner directly or try again later.",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            
+        except discord.NotFound:
+            # Owner or channel not found
+            embed = discord.Embed(
+                title="❌ Delivery Failed",
+                description="Unable to find the configured destination for your message. "
+                           "Please contact an administrator.",
                 color=discord.Color.red()
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -200,6 +259,156 @@ class SensitiveCommands(commands.Cog):
             )
         
         embed.set_footer(text="Use this system responsibly and only for legitimate purposes")
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+    
+    @app_commands.command(name='sensitive-config-dm', description='[OWNER ONLY] Configure sensitive messages to be sent to your DM')
+    async def config_dm(self, interaction: discord.Interaction):
+        """Configure sensitive messages to be sent to owner's DM"""
+        if not self.is_owner(interaction.user.id):
+            embed = discord.Embed(
+                title="❌ Access Denied",
+                description="Only the bot owner can use this command.",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        
+        config = self.load_config()
+        config['routing_type'] = 'dm'
+        config['channel_id'] = None
+        config['guild_id'] = None
+        
+        if self.save_config(config):
+            embed = discord.Embed(
+                title="✅ Configuration Updated",
+                description="Sensitive messages will now be sent to your DM.",
+                color=discord.Color.green()
+            )
+        else:
+            embed = discord.Embed(
+                title="❌ Error",
+                description="Failed to save configuration. Please try again.",
+                color=discord.Color.red()
+            )
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+    
+    @app_commands.command(name='sensitive-config-channel', description='[OWNER ONLY] Configure sensitive messages to be sent to a specific channel')
+    @app_commands.describe(channel='The channel where sensitive messages should be sent')
+    async def config_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        """Configure sensitive messages to be sent to a specific channel"""
+        if not self.is_owner(interaction.user.id):
+            embed = discord.Embed(
+                title="❌ Access Denied",
+                description="Only the bot owner can use this command.",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        
+        # Check if we're in a guild and bot has permissions in the channel
+        if not interaction.guild:
+            embed = discord.Embed(
+                title="❌ Guild Required",
+                description="This command must be used in a server, not in DMs.",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+            
+        permissions = channel.permissions_for(interaction.guild.me)
+        if not (permissions.send_messages and permissions.embed_links):
+            embed = discord.Embed(
+                title="❌ Insufficient Permissions",
+                description=f"I don't have permission to send messages or embed links in {channel.mention}.\n"
+                           "Please ensure I have the required permissions and try again.",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        
+        config = self.load_config()
+        config['routing_type'] = 'channel'
+        config['channel_id'] = channel.id
+        config['guild_id'] = interaction.guild.id if interaction.guild else None
+        
+        if self.save_config(config):
+            embed = discord.Embed(
+                title="✅ Configuration Updated",
+                description=f"Sensitive messages will now be sent to {channel.mention}.",
+                color=discord.Color.green()
+            )
+        else:
+            embed = discord.Embed(
+                title="❌ Error",
+                description="Failed to save configuration. Please try again.",
+                color=discord.Color.red()
+            )
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+    
+    @app_commands.command(name='sensitive-config-status', description='[OWNER ONLY] View current sensitive message routing configuration')
+    async def config_status(self, interaction: discord.Interaction):
+        """Show current sensitive message routing configuration"""
+        if not self.is_owner(interaction.user.id):
+            embed = discord.Embed(
+                title="❌ Access Denied",
+                description="Only the bot owner can use this command.",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        
+        config = self.load_config()
+        
+        embed = discord.Embed(
+            title="🔧 Sensitive Message Configuration",
+            color=discord.Color.blue(),
+            timestamp=datetime.utcnow()
+        )
+        
+        if config['routing_type'] == 'dm':
+            embed.add_field(
+                name="📤 Current Routing",
+                value="**Direct Message** to bot owner",
+                inline=False
+            )
+        elif config['routing_type'] == 'channel' and config['channel_id']:
+            try:
+                channel = self.bot.get_channel(config['channel_id'])
+                if channel:
+                    embed.add_field(
+                        name="📤 Current Routing",
+                        value=f"**Channel:** {channel.mention}\n**Guild:** {channel.guild.name}",
+                        inline=False
+                    )
+                else:
+                    embed.add_field(
+                        name="📤 Current Routing",
+                        value="**Channel:** ⚠️ Channel not found (may have been deleted)",
+                        inline=False
+                    )
+            except Exception:
+                embed.add_field(
+                    name="📤 Current Routing",
+                    value="**Channel:** ⚠️ Error accessing channel",
+                    inline=False
+                )
+        else:
+            embed.add_field(
+                name="📤 Current Routing",
+                value="**Default:** Direct Message to bot owner",
+                inline=False
+            )
+        
+        embed.add_field(
+            name="🛠️ Configuration Commands",
+            value="`/sensitive-config-dm` - Route to your DM\n"
+                  "`/sensitive-config-channel` - Route to a channel\n"
+                  "`/sensitive-config-status` - View this status",
+            inline=False
+        )
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
