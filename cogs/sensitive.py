@@ -179,7 +179,10 @@ class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
                            "Please contact the bot owner directly or try again later.",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            if not interaction.response.is_done():
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+            else:
+                await interaction.followup.send(embed=embed, ephemeral=True)
             
         except discord.NotFound:
             # Owner or channel not found
@@ -189,7 +192,10 @@ class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
                            "Please contact an administrator.",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            if not interaction.response.is_done():
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+            else:
+                await interaction.followup.send(embed=embed, ephemeral=True)
             
         except Exception as e:
             # Other error
@@ -199,7 +205,10 @@ class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
                            "or contact the bot owner directly.",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            if not interaction.response.is_done():
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+            else:
+                await interaction.followup.send(embed=embed, ephemeral=True)
     
     @app_commands.command(name='sensitive-help', description='Get information about the sensitive information system')
     async def sensitive_help(self, interaction: discord.Interaction):
