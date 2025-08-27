@@ -58,28 +58,15 @@ class ImageSearch(commands.Cog):
                 await interaction.followup.send(embed=embed)
                 return
             
-            # Create embed with results
+            # Create embed with single result
             embed = discord.Embed(
-                title="🖼️ Image Search Results",
-                description=f"Found images for: **{query}**",
+                title="🖼️ Image Search",
+                description=f"**{query}**",
                 color=discord.Color.blue()
             )
             
-            # Add first image as main image
+            # Add the image
             embed.set_image(url=image_urls[0])
-            
-            # Add additional image links if available
-            if len(image_urls) > 1:
-                additional_links = []
-                for i, url in enumerate(image_urls[1:4], 2):  # Show up to 3 more
-                    additional_links.append(f"[Image {i}]({url})")
-                
-                if additional_links:
-                    embed.add_field(
-                        name="📎 More Results",
-                        value=" • ".join(additional_links),
-                        inline=False
-                    )
             
             embed.set_footer(text=f"Requested by {interaction.user.display_name}")
             
@@ -101,7 +88,7 @@ class ImageSearch(commands.Cog):
             except:
                 await interaction.response.send_message(embed=embed, ephemeral=True)
     
-    async def search_google_images(self, query: str, max_results: int = 5):
+    async def search_google_images(self, query: str, max_results: int = 1):
         """Search for images using Google Images"""
         try:
             # Encode the search query
@@ -220,28 +207,15 @@ class ImageSearch(commands.Cog):
                     await ctx.send(embed=embed)
                     return
                 
-                # Create embed with results
+                # Create embed with single result
                 embed = discord.Embed(
-                    title="🖼️ Image Search Results",
-                    description=f"Found images for: **{query}**",
+                    title="🖼️ Image Search",
+                    description=f"**{query}**",
                     color=discord.Color.blue()
                 )
                 
-                # Add first image as main image
+                # Add the image
                 embed.set_image(url=image_urls[0])
-                
-                # Add additional image links if available
-                if len(image_urls) > 1:
-                    additional_links = []
-                    for i, url in enumerate(image_urls[1:4], 2):  # Show up to 3 more
-                        additional_links.append(f"[Image {i}]({url})")
-                    
-                    if additional_links:
-                        embed.add_field(
-                            name="📎 More Results",
-                            value=" • ".join(additional_links),
-                            inline=False
-                        )
                 
                 embed.set_footer(text=f"Requested by {ctx.author.display_name}")
                 

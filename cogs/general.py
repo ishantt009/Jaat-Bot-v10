@@ -187,6 +187,17 @@ class General(commands.Cog):
                 inline=True
             )
             
+            # Image Search
+            image_commands = [
+                f"`{prefix}image-search <query>` - Search for images",
+                "`/image <query>` - Search for images (slash)"
+            ]
+            embed.add_field(
+                name="🖼️ Image Search",
+                value="\n".join(image_commands),
+                inline=True
+            )
+            
             # Sensitive Information (Slash Commands Only)
             sensitive_commands = [
                 "`/sensitive <message>` - Send private info to owner",
