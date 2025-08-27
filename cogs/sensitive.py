@@ -6,8 +6,8 @@ import os
 import asyncio
 import json
 
-class SensitiveCommands(commands.Cog):
-    """Sensitive information handling commands"""
+class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
+    """Secure messaging system for private information"""
     
     def __init__(self, bot):
         self.bot = bot
@@ -214,7 +214,7 @@ class SensitiveCommands(commands.Cog):
         embed.add_field(
             name="📋 How to Use",
             value="Use `/sensitive` followed by your private information. "
-                  "The information will be sent directly to the bot owner via private message.",
+                  "The information will be sent to the bot owner based on their configuration.",
             inline=False
         )
         
