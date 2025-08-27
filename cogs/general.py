@@ -35,8 +35,7 @@ class General(commands.Cog):
         add_embed_id(embed)
         await ctx.send(embed=embed)
     
-    @commands.hybrid_command(name='help')
-    @app_commands.describe(command_name="Name of the command to get help for")
+    @commands.command(name='help')
     async def help_command(self, ctx, command_name: str | None = None):
         """Custom help command"""
         # Get the correct prefix for this server

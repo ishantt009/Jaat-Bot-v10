@@ -1,63 +1,64 @@
-# Discord Bot Development Environment
+# Overview
 
-## Overview
+This is a Discord bot development environment built with Python and discord.py. It provides a complete, production-ready foundation for creating Discord bots with both text commands (prefix-based) and slash commands support. The project emphasizes modularity, proper error handling, and development-friendly features like hot reloading and comprehensive logging.
 
-A comprehensive Discord bot framework built with Python and discord.py, featuring a modular cog-based architecture. The project provides a complete foundation for building Discord bots with built-in moderation tools, event handling, logging systems, and extensible command structures. The bot supports both development and production deployments with configurable features and robust error handling.
-
-## User Preferences
+# User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-## System Architecture
+# System Architecture
 
-### Application Structure
-The bot follows a modular architecture pattern using discord.py's cog system:
+## Core Bot Architecture
+- **Main Bot Class**: `DiscordBot` extends `commands.Bot` with enhanced functionality and configuration management
+- **Modular Design**: Commands and events are organized into separate cogs (modules) for better maintainability
+- **Dual Command System**: Supports both traditional text commands (`!ping`) and modern slash commands (`/ping`)
+- **Configuration Management**: Environment-based configuration using `Config` class with `.env` file support
 
-- **Main Bot Class (`bot/bot.py`)**: Central bot instance that manages initialization, event setup, and cog loading
-- **Configuration Management (`bot/config.py`)**: Centralized configuration using environment variables with validation and type checking
-- **Modular Commands**: Organized into separate cogs for different functionality domains (general, moderation, events)
-- **Utility Layer**: Shared helper functions and logging infrastructure
+## Command Structure
+- **Cog-based Organization**: Commands are grouped into logical categories (basic, admin) using discord.py's Cog system
+- **Permission Handling**: Built-in permission checks, especially for admin commands
+- **Error Handling**: Comprehensive error handling with user-friendly error messages and logging
 
-### Command Organization
-Commands are organized into logical cogs:
+## Event System
+- **Event Handlers**: Organized into separate modules (ready, message, error events)
+- **Automatic Processing**: Message events automatically process both regular messages and commands
+- **Bot Mentions**: Special handling for when the bot is mentioned in messages
+- **Guild Management**: Tracks bot joining/leaving servers with proper logging
 
-- **General Cog**: Basic utility commands (ping, info, stats)
-- **Moderation Cog**: Administrative commands with permission checking and role hierarchy validation
-- **Events Cog**: Discord event handlers for member join/leave, message events, and server activities
+## Logging System
+- **Structured Logging**: Multi-level logging (DEBUG, INFO, WARNING, ERROR, CRITICAL) with timestamps
+- **Bot-specific Logger**: Custom `BotLogger` class for Discord-specific events
+- **Console and File Output**: Configurable output to console and optional file logging
+- **Debug Mode**: Enhanced logging and error reporting in development mode
 
-### Logging System
-Comprehensive logging architecture with:
+## Configuration Management
+- **Environment Variables**: All sensitive data (tokens, URLs) stored in environment variables
+- **Development vs Production**: Different behaviors based on debug flag
+- **Validation**: Configuration validation to ensure required settings are present
+- **Extensible Settings**: Easy to add new configuration options
 
-- **Dual Output**: Both console and file logging support
-- **Structured Formatting**: Different formatters for console vs file output
-- **Configurable Levels**: Environment-controlled log levels
-- **Centralized Management**: Single setup function for consistent logging across all modules
+## Entry Points
+- **Multiple Entry Points**: Both `main.py` and `run.py` for flexibility in deployment
+- **Graceful Startup**: Proper initialization sequence with validation and error handling
+- **Clean Shutdown**: Handles interrupts and errors gracefully
 
-### Security & Permissions
-- **Environment-based Configuration**: Sensitive data stored in environment variables
-- **Permission Validation**: Role-based permission checking for moderation commands
-- **Hierarchy Enforcement**: Prevents users from moderating higher-ranked members
+# External Dependencies
 
-### Error Handling
-- **Graceful Degradation**: Proper error handling for missing permissions or invalid operations
-- **User-friendly Messages**: Clear feedback for command failures
-- **Comprehensive Logging**: Detailed error tracking for debugging
+## Core Framework
+- **discord.py**: Primary Discord API wrapper for bot functionality
+- **asyncio**: Built-in Python library for asynchronous programming
 
-## External Dependencies
+## Configuration Management
+- **python-dotenv**: Loads environment variables from `.env` files for local development
 
-### Core Framework
-- **discord.py**: Primary Discord API library for bot functionality
-- **python-dotenv**: Environment variable management from .env files
+## Logging
+- **Built-in logging**: Uses Python's standard logging module with custom formatting
 
-### System Utilities
-- **psutil**: System information gathering for bot stats and monitoring
-- **asyncio**: Asynchronous programming support for Discord operations
+## Development Tools
+- **Hot Reloading**: Built-in extension reloading for development
+- **Debug Mode**: Enhanced error reporting and logging during development
 
-### Development Tools
-- **logging**: Python's built-in logging framework for comprehensive log management
-- **pathlib**: Modern path handling for cross-platform file operations
-
-### Discord Integration
-- **Discord Intents**: Message content, member, and guild intents for full functionality
-- **Bot Permissions**: Configurable permission system for moderation features
-- **Event Handling**: Real-time Discord event processing and response
+## Discord Integration
+- **Bot Intents**: Configured for message content, guild access, and message handling
+- **Application Commands**: Full slash command support with Discord's application command system
+- **Presence Management**: Dynamic presence updates showing server count and help information
