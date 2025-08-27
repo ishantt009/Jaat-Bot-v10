@@ -657,6 +657,86 @@ class EmbedBuilder(commands.Cog):
                 color=discord.Color.red()
             )
             await ctx.send(embed=embed, ephemeral=True)
+    
+    @commands.hybrid_command(name='saychannel')
+    @app_commands.describe(
+        channel="The channel to send the message to",
+        message="Message to send as the bot"
+    )
+    @commands.guild_only()
+    async def say_channel(self, ctx, channel: discord.TextChannel, *, message: str):
+        """Send a message to a specific channel as the bot"""
+        # Permission check
+        if not has_mod_permissions(ctx.author, ctx.guild):
+            embed = discord.Embed(
+                title="❌ Missing Permissions",
+                description="You need moderator permissions to use this command.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, ephemeral=True)
+            return
+        
+        # Check message length
+        if len(message) > 2000:
+            embed = discord.Embed(
+                title="❌ Message Too Long",
+                description="Message cannot exceed 2000 characters.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, ephemeral=True)
+            return
+        
+        # Check if bot can send messages in target channel
+        if not channel.permissions_for(ctx.guild.me).send_messages:
+            embed = discord.Embed(
+                title="❌ No Permission",
+                description=f"I don't have permission to send messages in {channel.mention}.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, ephemeral=True)
+            return
+        
+        # Delete the command message if it's a prefix command
+        if ctx.interaction is None:
+            try:
+                await ctx.message.delete()
+            except:
+                pass
+        
+        # Send the message to target channel
+        try:
+            await channel.send(message)
+            
+            # Send confirmation
+            embed = discord.Embed(
+                title="✅ Message Sent",
+                description=f"Your message has been posted to {channel.mention}.",
+                color=discord.Color.green()
+            )
+            embed.add_field(
+                name="Message Preview",
+                value=message[:100] + ("..." if len(message) > 100 else ""),
+                inline=False
+            )
+            
+            if ctx.interaction:
+                await ctx.send(embed=embed, ephemeral=True)
+            else:
+                # For prefix commands, send confirmation in current channel briefly
+                confirm_msg = await ctx.send(embed=embed)
+                await asyncio.sleep(3)
+                try:
+                    await confirm_msg.delete()
+                except:
+                    pass
+                
+        except discord.HTTPException as e:
+            embed = discord.Embed(
+                title="❌ Failed to Send",
+                description=f"Could not send the message to {channel.mention}: {str(e)}",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(EmbedBuilder(bot))

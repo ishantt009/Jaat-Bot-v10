@@ -172,7 +172,8 @@ class General(commands.Cog):
             embed_commands = [
                 f"`{prefix}embed` - Interactive embed builder",
                 f"`{prefix}dm <user> <msg>` - Send DM to user",
-                f"`{prefix}say <message>` - Send as bot"
+                f"`{prefix}say <message>` - Send as bot",
+                f"`{prefix}saychannel #channel <msg>`"
             ]
             embed.add_field(
                 name="🎨 Embed Builder",
