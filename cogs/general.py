@@ -188,6 +188,17 @@ class General(commands.Cog):
                 inline=True
             )
             
+            # Sensitive Information (Slash Commands Only)
+            sensitive_commands = [
+                "`/sensitive <message>` - Send private info to owner",
+                "`/sensitive-help` - Learn about the system"
+            ]
+            embed.add_field(
+                name="🔒 Sensitive Information",
+                value="\n".join(sensitive_commands),
+                inline=True
+            )
+            
             embed.add_field(
                 name="💡 Tip",
                 value="Most commands require mod permissions\nType `/` to see slash commands",
