@@ -188,18 +188,6 @@ class General(commands.Cog):
                 inline=True
             )
             
-            # AI Reply System
-            ai_commands = [
-                f"`{prefix}ai-enable`, `{prefix}ai-disable`",
-                f"`{prefix}ai-status`, `{prefix}ai-settings`",
-                "Auto AI replies in enabled channels"
-            ]
-            embed.add_field(
-                name="🤖 AI Reply System",
-                value="\n".join(ai_commands),
-                inline=True
-            )
-            
             # Sensitive Information (Slash Commands Only)
             sensitive_commands = [
                 "`/sensitive <message>` - Send private info to owner",

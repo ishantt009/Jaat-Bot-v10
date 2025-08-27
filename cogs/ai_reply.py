@@ -211,39 +211,6 @@ class AIReplySystem(commands.Cog, name="🤖 AI Reply System"):
         except Exception as e:
             logger.error(f"Error in AI reply system: {e}")
     
-    @commands.command(name='ai-enable', aliases=['aienable', 'ai_enable'], help='Enable AI replies in this channel')
-    async def enable_ai_prefix(self, ctx):
-        """Enable AI replies in the current channel (prefix version)"""
-        
-        if not isinstance(ctx.author, discord.Member) or not self.is_admin(ctx.author):
-            embed = discord.Embed(
-                title="❌ Permission Denied",
-                description="Only administrators can manage AI reply settings.",
-                color=discord.Color.red()
-            )
-            await ctx.send(embed=embed)
-            return
-        
-        channel_id = ctx.channel.id
-        
-        if channel_id in self.enabled_channels:
-            embed = discord.Embed(
-                title="ℹ️ Already Enabled",
-                description="AI replies are already enabled in this channel.",
-                color=discord.Color.blue()
-            )
-        else:
-            self.enabled_channels.add(channel_id)
-            self.save_config()
-            
-            embed = discord.Embed(
-                title="✅ AI Replies Enabled",
-                description=f"AI replies are now enabled in {ctx.channel.mention}!",
-                color=discord.Color.green()
-            )
-            
-        await ctx.send(embed=embed)
-
     @app_commands.command(name='ai-enable', description='Enable AI replies in this channel')
     async def enable_ai(self, interaction: discord.Interaction):
         """Enable AI replies in the current channel"""
@@ -282,39 +249,6 @@ class AIReplySystem(commands.Cog, name="🤖 AI Reply System"):
             
         await interaction.response.send_message(embed=embed)
     
-    @commands.command(name='ai-disable', aliases=['aidisable', 'ai_disable'], help='Disable AI replies in this channel')
-    async def disable_ai_prefix(self, ctx):
-        """Disable AI replies in the current channel (prefix version)"""
-        
-        if not isinstance(ctx.author, discord.Member) or not self.is_admin(ctx.author):
-            embed = discord.Embed(
-                title="❌ Permission Denied",
-                description="Only administrators can manage AI reply settings.",
-                color=discord.Color.red()
-            )
-            await ctx.send(embed=embed)
-            return
-        
-        channel_id = ctx.channel.id
-        
-        if channel_id not in self.enabled_channels:
-            embed = discord.Embed(
-                title="ℹ️ Already Disabled",
-                description="AI replies are already disabled in this channel.",
-                color=discord.Color.blue()
-            )
-        else:
-            self.enabled_channels.discard(channel_id)
-            self.save_config()
-            
-            embed = discord.Embed(
-                title="✅ AI Replies Disabled",
-                description=f"AI replies are now disabled in {ctx.channel.mention}.",
-                color=discord.Color.orange()
-            )
-            
-        await ctx.send(embed=embed)
-
     @app_commands.command(name='ai-disable', description='Disable AI replies in this channel')
     async def disable_ai(self, interaction: discord.Interaction):
         """Disable AI replies in the current channel"""
@@ -353,62 +287,6 @@ class AIReplySystem(commands.Cog, name="🤖 AI Reply System"):
             
         await interaction.response.send_message(embed=embed)
     
-    @commands.command(name='ai-status', aliases=['aistatus', 'ai_status'], help='Check AI reply status for channels')
-    async def ai_status_prefix(self, ctx):
-        """Show AI reply status for all channels (prefix version)"""
-        
-        embed = discord.Embed(
-            title="🤖 AI Reply System Status",
-            color=discord.Color.blue(),
-            timestamp=datetime.utcnow()
-        )
-        
-        # Current channel status
-        current_status = "✅ Enabled" if ctx.channel.id in self.enabled_channels else "❌ Disabled"
-        embed.add_field(
-            name="Current Channel",
-            value=f"{ctx.channel.mention}: {current_status}",
-            inline=False
-        )
-        
-        # All enabled channels
-        if self.enabled_channels:
-            enabled_channels = []
-            for channel_id in self.enabled_channels:
-                channel = self.bot.get_channel(channel_id)
-                if channel:
-                    enabled_channels.append(channel.mention)
-                    
-            if enabled_channels:
-                embed.add_field(
-                    name="Enabled Channels",
-                    value="\n".join(enabled_channels[:10]) + 
-                          (f"\n... and {len(enabled_channels) - 10} more" if len(enabled_channels) > 10 else ""),
-                    inline=False
-                )
-        else:
-            embed.add_field(
-                name="Enabled Channels",
-                value="None",
-                inline=False
-            )
-        
-        # Settings info
-        settings_info = f"**Model:** {self.ai_settings['model']}\n"
-        settings_info += f"**Response Chance:** {self.ai_settings['response_chance']}%\n"
-        settings_info += f"**Mention Only:** {'Yes' if self.ai_settings['mention_only'] else 'No'}\n"
-        settings_info += f"**Cooldown:** {self.ai_settings['cooldown']}s"
-        
-        embed.add_field(
-            name="AI Settings",
-            value=settings_info,
-            inline=False
-        )
-        
-        embed.set_footer(text="Use !ai-enable or !ai-disable to manage channels")
-        
-        await ctx.send(embed=embed)
-
     @app_commands.command(name='ai-status', description='Check AI reply status for channels')
     async def ai_status(self, interaction: discord.Interaction):
         """Show AI reply status for all channels"""
@@ -467,78 +345,6 @@ class AIReplySystem(commands.Cog, name="🤖 AI Reply System"):
         
         await interaction.response.send_message(embed=embed)
     
-    @commands.command(name='ai-settings', aliases=['aisettings', 'ai_settings'], help='[ADMIN] Configure AI reply settings')
-    async def ai_settings_prefix(self, ctx, response_chance: Optional[int] = None, mention_only: Optional[bool] = None, cooldown: Optional[int] = None):
-        """Configure AI reply settings (prefix version)"""
-        
-        if not isinstance(ctx.author, discord.Member) or not self.is_admin(ctx.author):
-            embed = discord.Embed(
-                title="❌ Permission Denied",
-                description="Only administrators can configure AI settings.",
-                color=discord.Color.red()
-            )
-            await ctx.send(embed=embed)
-            return
-        
-        changes = []
-        
-        if response_chance is not None:
-            if 1 <= response_chance <= 100:
-                self.ai_settings['response_chance'] = response_chance
-                changes.append(f"Response chance: {response_chance}%")
-            else:
-                embed = discord.Embed(
-                    title="❌ Invalid Value",
-                    description="Response chance must be between 1 and 100.",
-                    color=discord.Color.red()
-                )
-                await ctx.send(embed=embed)
-                return
-        
-        if mention_only is not None:
-            self.ai_settings['mention_only'] = mention_only
-            changes.append(f"Mention only: {'Yes' if mention_only else 'No'}")
-        
-        if cooldown is not None:
-            if 0 <= cooldown <= 30:
-                self.ai_settings['cooldown'] = cooldown
-                changes.append(f"Cooldown: {cooldown}s")
-            else:
-                embed = discord.Embed(
-                    title="❌ Invalid Value",
-                    description="Cooldown must be between 0 and 30 seconds.",
-                    color=discord.Color.red()
-                )
-                await ctx.send(embed=embed)
-                return
-        
-        if changes:
-            self.save_config()
-            embed = discord.Embed(
-                title="✅ Settings Updated",
-                description="AI reply settings have been updated:\n\n" + "\n".join(changes),
-                color=discord.Color.green()
-            )
-        else:
-            # Show current settings
-            embed = discord.Embed(
-                title="🔧 Current AI Settings",
-                color=discord.Color.blue()
-            )
-            
-            embed.add_field(name="Response Chance", value=f"{self.ai_settings['response_chance']}%", inline=True)
-            embed.add_field(name="Mention Only", value="Yes" if self.ai_settings['mention_only'] else "No", inline=True)
-            embed.add_field(name="Cooldown", value=f"{self.ai_settings['cooldown']}s", inline=True)
-            embed.add_field(name="Model", value=self.ai_settings['model'], inline=False)
-            
-            embed.add_field(
-                name="Usage Examples",
-                value="```\n!ai-settings 50         # Set 50% response chance\n!ai-settings 100 True   # 100% chance, mention only\n!ai-settings 75 False 5 # 75% chance, any message, 5s cooldown\n```",
-                inline=False
-            )
-            
-        await ctx.send(embed=embed)
-
     @app_commands.command(name='ai-settings', description='[ADMIN] Configure AI reply settings')
     @app_commands.describe(
         response_chance='Percentage chance to respond (1-100)',
