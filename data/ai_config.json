@@ -1,5 +1,7 @@
 {
-  "enabled_channels": [],
+  "enabled_channels": [
+    1409954252788465785
+  ],
   "ai_settings": {
     "model": "microsoft/DialoGPT-medium",
     "max_length": 100,
