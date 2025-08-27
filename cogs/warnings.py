@@ -7,6 +7,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 from utils.permissions import has_mod_permissions
+from cogs.quota_system import quota_data
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +133,10 @@ class Warnings(commands.Cog):
         
         # Add warning
         warning_id = self.add_warning(ctx.guild.id, user.id, ctx.author.id, reason)
+        
+        # Track staff quota
+        quota_data.add_staff_action(ctx.author.id, 'warns')
+        
         user_warnings = self.get_user_warnings(ctx.guild.id, user.id)
         active_warnings = [w for w in user_warnings if w["active"]]
         

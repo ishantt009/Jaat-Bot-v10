@@ -44,6 +44,7 @@ class DiscordBot(commands.Bot):
             await self.load_extension('cogs.roles')
             await self.load_extension('cogs.settings')
             await self.load_extension('cogs.embed_builder')
+            await self.load_extension('cogs.quota_system')
             logger.info("All cogs loaded successfully")
         except Exception as e:
             logger.error(f"Failed to load cogs: {e}")

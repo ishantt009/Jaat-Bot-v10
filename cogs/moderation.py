@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import logging
 from utils.permissions import has_mod_permissions, has_admin_permissions
+from cogs.quota_system import quota_data
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +130,9 @@ class Moderation(commands.Cog):
             # Kick the member
             await member.kick(reason=f"Kicked by {ctx.author}: {reason}")
             
+            # Track staff quota
+            quota_data.add_staff_action(ctx.author.id, 'kicks')
+            
             # Send confirmation
             embed = discord.Embed(
                 title="✅ Member Kicked",
@@ -227,6 +231,9 @@ class Moderation(commands.Cog):
             
             # Ban the member
             await member.ban(reason=f"Banned by {ctx.author}: {reason}", delete_message_days=0)
+            
+            # Track staff quota
+            quota_data.add_staff_action(ctx.author.id, 'bans')
             
             # Send confirmation
             embed = discord.Embed(
