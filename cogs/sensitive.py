@@ -447,6 +447,279 @@ class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
         )
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
+    
+    # Prefix command versions (except for !sensitive information command)
+    
+    @commands.command(name='sensitive-help', help='Get information about the sensitive information system')
+    async def sensitive_help_prefix(self, ctx):
+        """Prefix version of sensitive-help command"""
+        
+        # Check if bot owner is configured
+        owner_id = int(os.getenv('OWNER_ID', 0)) if os.getenv('OWNER_ID') else None
+        
+        embed = discord.Embed(
+            title="🔒 Sensitive Information System",
+            description="This system allows you to securely send private information directly to the bot owner.",
+            color=discord.Color.blue()
+        )
+        
+        embed.add_field(
+            name="📋 How to Use",
+            value="Use `/sensitive` followed by your private information. "
+                  "The information will be sent to the bot owner based on their configuration.",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="🔐 Security Features",
+            value="• Messages are sent privately (only you can see the response)\n"
+                  "• Information goes to bot owner via DM or configured channel\n"
+                  "• No one else in the server can see your message\n"
+                  "• Your user information is included for context\n"
+                  "• Smart fallback if configured channel unavailable",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="📝 What to Include",
+            value="• Account issues or problems\n"
+                  "• Bug reports with sensitive data\n"
+                  "• Private concerns or questions\n"
+                  "• Any information you don't want public",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="⚠️ Important Notes",
+            value="• Only use this for legitimate concerns\n"
+                  "• The bot owner will receive your Discord username and ID\n"
+                  "• Response time may vary depending on availability\n"
+                  "• Don't share illegal content or spam",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="🔧 Routing System",
+            value="• Bot owner can configure where messages are sent\n"
+                  "• Options: Owner's DM or specific channel\n"
+                  "• Auto-fallback to DM if channel has issues\n"
+                  "• You'll be informed where your message was delivered",
+            inline=False
+        )
+        
+        if owner_id:
+            embed.add_field(
+                name="✅ Status",
+                value="The sensitive information system is **online** and ready to use.",
+                inline=False
+            )
+        else:
+            embed.add_field(
+                name="❌ Status",
+                value="The sensitive information system is currently **unavailable**. Please contact an administrator.",
+                inline=False
+            )
+        
+        embed.set_footer(text="Use this system responsibly and only for legitimate purposes")
+        
+        # Try to send as DM, fallback to channel if fails
+        try:
+            await ctx.author.send(embed=embed)
+            if ctx.guild:  # If used in a server, confirm the DM was sent
+                await ctx.send("📩 Help information sent to your DM!", delete_after=5)
+        except discord.Forbidden:
+            # Can't DM user, send in channel but delete after 30 seconds
+            await ctx.send(embed=embed, delete_after=30)
+    
+    @commands.command(name='sensitive-config-dm', help='[OWNER ONLY] Configure sensitive messages to be sent to your DM')
+    async def config_dm_prefix(self, ctx):
+        """Prefix version of sensitive-config-dm command"""
+        logger.info(f"Config DM prefix command called by {ctx.author.id}")
+        
+        if not self.is_owner(ctx.author.id):
+            logger.warning(f"Non-owner {ctx.author.id} tried to use config DM prefix command")
+            embed = discord.Embed(
+                title="❌ Access Denied",
+                description="Only the bot owner can use this command.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, delete_after=10)
+            return
+        
+        config = self.load_config()
+        config['routing_type'] = 'dm'
+        config['channel_id'] = None
+        config['guild_id'] = None
+        
+        if self.save_config(config):
+            logger.info("Successfully updated config to DM mode via prefix")
+            embed = discord.Embed(
+                title="✅ Configuration Updated",
+                description="Sensitive messages will now be sent to your DM.",
+                color=discord.Color.green()
+            )
+        else:
+            logger.error("Failed to save config to DM mode via prefix")
+            embed = discord.Embed(
+                title="❌ Error",
+                description="Failed to save configuration. Please try again.",
+                color=discord.Color.red()
+            )
+        
+        # Try to send as DM to owner
+        try:
+            await ctx.author.send(embed=embed)
+            if ctx.guild:
+                await ctx.send("📩 Configuration updated! Details sent to your DM.", delete_after=5)
+        except discord.Forbidden:
+            await ctx.send(embed=embed, delete_after=15)
+    
+    @commands.command(name='sensitive-config-channel', help='[OWNER ONLY] Configure sensitive messages to be sent to a specific channel')
+    async def config_channel_prefix(self, ctx, channel: discord.TextChannel):
+        """Prefix version of sensitive-config-channel command"""
+        logger.info(f"Config channel prefix command called by {ctx.author.id}")
+        
+        if not self.is_owner(ctx.author.id):
+            logger.warning(f"Non-owner {ctx.author.id} tried to use config channel prefix command")
+            embed = discord.Embed(
+                title="❌ Access Denied",
+                description="Only the bot owner can use this command.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, delete_after=10)
+            return
+        
+        
+        # Check if we're in a guild and bot has permissions in the channel
+        if not ctx.guild:
+            embed = discord.Embed(
+                title="❌ Guild Required",
+                description="This command must be used in a server, not in DMs.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, delete_after=10)
+            return
+            
+        permissions = channel.permissions_for(ctx.guild.me)
+        if not (permissions.send_messages and permissions.embed_links):
+            logger.warning(f"Bot lacks permissions in channel {channel.id} via prefix")
+            embed = discord.Embed(
+                title="❌ Insufficient Permissions",
+                description=f"I don't have permission to send messages or embed links in {channel.mention}.\n"
+                           "Please ensure I have the required permissions and try again.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, delete_after=15)
+            return
+        
+        config = self.load_config()
+        config['routing_type'] = 'channel'
+        config['channel_id'] = channel.id
+        config['guild_id'] = ctx.guild.id if ctx.guild else None
+        
+        if self.save_config(config):
+            logger.info(f"Successfully updated config to channel mode via prefix: {channel.id}")
+            embed = discord.Embed(
+                title="✅ Configuration Updated",
+                description=f"Sensitive messages will now be sent to {channel.mention}.",
+                color=discord.Color.green()
+            )
+        else:
+            logger.error(f"Failed to save config for channel {channel.id} via prefix")
+            embed = discord.Embed(
+                title="❌ Error",
+                description="Failed to save configuration. Please try again.",
+                color=discord.Color.red()
+            )
+        
+        # Try to send as DM to owner
+        try:
+            await ctx.author.send(embed=embed)
+            if ctx.guild:
+                await ctx.send("📩 Configuration updated! Details sent to your DM.", delete_after=5)
+        except discord.Forbidden:
+            await ctx.send(embed=embed, delete_after=15)
+    
+    @commands.command(name='sensitive-config-status', help='[OWNER ONLY] View current sensitive message routing configuration')
+    async def config_status_prefix(self, ctx):
+        """Prefix version of sensitive-config-status command"""
+        logger.info(f"Config status prefix command called by {ctx.author.id}")
+        
+        if not self.is_owner(ctx.author.id):
+            embed = discord.Embed(
+                title="❌ Access Denied",
+                description="Only the bot owner can use this command.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed, delete_after=10)
+            return
+        
+        config = self.load_config()
+        logger.info(f"Current config via prefix: {config}")
+        
+        embed = discord.Embed(
+            title="🔧 Sensitive Message Configuration",
+            color=discord.Color.blue(),
+            timestamp=datetime.utcnow()
+        )
+        
+        if config['routing_type'] == 'dm':
+            embed.add_field(
+                name="📤 Current Routing",
+                value="**Direct Message** to bot owner",
+                inline=False
+            )
+        elif config['routing_type'] == 'channel' and config['channel_id']:
+            try:
+                channel = self.bot.get_channel(config['channel_id'])
+                if channel:
+                    embed.add_field(
+                        name="📤 Current Routing",
+                        value=f"**Channel:** {channel.mention}\n**Guild:** {channel.guild.name}",
+                        inline=False
+                    )
+                else:
+                    embed.add_field(
+                        name="📤 Current Routing",
+                        value="**Channel:** ⚠️ Channel not found (may have been deleted)",
+                        inline=False
+                    )
+            except Exception:
+                embed.add_field(
+                    name="📤 Current Routing",
+                    value="**Channel:** ⚠️ Error accessing channel",
+                    inline=False
+                )
+        else:
+            embed.add_field(
+                name="📤 Current Routing",
+                value="**Default:** Direct Message to bot owner",
+                inline=False
+            )
+        
+        embed.add_field(
+            name="🛠️ Configuration Commands (Slash)",
+            value="`/sensitive-config-dm` - Route to your DM\n"
+                  "`/sensitive-config-channel` - Route to a channel\n"
+                  "`/sensitive-config-status` - View this status",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="🛠️ Configuration Commands (Prefix)",
+            value="`!sensitive-config-dm` - Route to your DM\n"
+                  "`!sensitive-config-channel #channel` - Route to a channel\n"
+                  "`!sensitive-config-status` - View this status",
+            inline=False
+        )
+        
+        # Try to send as DM to owner
+        try:
+            await ctx.author.send(embed=embed)
+            if ctx.guild:
+                await ctx.send("📩 Configuration status sent to your DM!", delete_after=5)
+        except discord.Forbidden:
+            await ctx.send(embed=embed, delete_after=30)
 
 async def setup(bot):
     """Setup function to add this cog to the bot"""
