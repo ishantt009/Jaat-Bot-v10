@@ -5,6 +5,9 @@ from datetime import datetime
 import os
 import asyncio
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
     """Secure messaging system for private information"""
@@ -272,16 +275,19 @@ class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
     
-    @app_commands.command(name='sensitive-config-dm', description='[OWNER ONLY] Configure sensitive messages to be sent to your DM')
-    async def config_dm(self, interaction: discord.Interaction):
+    @commands.hybrid_command(name='sensitive-config-dm', description='[OWNER ONLY] Configure sensitive messages to be sent to your DM')
+    async def config_dm(self, ctx):
         """Configure sensitive messages to be sent to owner's DM"""
-        if not self.is_owner(interaction.user.id):
+        logger.info(f"Config DM command called by {ctx.author.id}")
+        
+        if not self.is_owner(ctx.author.id):
+            logger.warning(f"Non-owner {ctx.author.id} tried to use config DM command")
             embed = discord.Embed(
                 title="❌ Access Denied",
                 description="Only the bot owner can use this command.",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await ctx.send(embed=embed, ephemeral=True)
             return
         
         config = self.load_config()
@@ -290,87 +296,97 @@ class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
         config['guild_id'] = None
         
         if self.save_config(config):
+            logger.info("Successfully updated config to DM mode")
             embed = discord.Embed(
                 title="✅ Configuration Updated",
                 description="Sensitive messages will now be sent to your DM.",
                 color=discord.Color.green()
             )
         else:
+            logger.error("Failed to save config to DM mode")
             embed = discord.Embed(
                 title="❌ Error",
                 description="Failed to save configuration. Please try again.",
                 color=discord.Color.red()
             )
         
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await ctx.send(embed=embed, ephemeral=True)
     
-    @app_commands.command(name='sensitive-config-channel', description='[OWNER ONLY] Configure sensitive messages to be sent to a specific channel')
-    @app_commands.describe(channel='The channel where sensitive messages should be sent')
-    async def config_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
+    @commands.hybrid_command(name='sensitive-config-channel', description='[OWNER ONLY] Configure sensitive messages to be sent to a specific channel')
+    async def config_channel(self, ctx, channel: discord.TextChannel):
         """Configure sensitive messages to be sent to a specific channel"""
-        if not self.is_owner(interaction.user.id):
+        logger.info(f"Config channel command called by {ctx.author.id} for channel {channel.id}")
+        
+        if not self.is_owner(ctx.author.id):
+            logger.warning(f"Non-owner {ctx.author.id} tried to use config channel command")
             embed = discord.Embed(
                 title="❌ Access Denied",
                 description="Only the bot owner can use this command.",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await ctx.send(embed=embed, ephemeral=True)
             return
         
         # Check if we're in a guild and bot has permissions in the channel
-        if not interaction.guild:
+        if not ctx.guild:
             embed = discord.Embed(
                 title="❌ Guild Required",
                 description="This command must be used in a server, not in DMs.",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await ctx.send(embed=embed, ephemeral=True)
             return
             
-        permissions = channel.permissions_for(interaction.guild.me)
+        permissions = channel.permissions_for(ctx.guild.me)
         if not (permissions.send_messages and permissions.embed_links):
+            logger.warning(f"Bot lacks permissions in channel {channel.id}")
             embed = discord.Embed(
                 title="❌ Insufficient Permissions",
                 description=f"I don't have permission to send messages or embed links in {channel.mention}.\n"
                            "Please ensure I have the required permissions and try again.",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await ctx.send(embed=embed, ephemeral=True)
             return
         
         config = self.load_config()
         config['routing_type'] = 'channel'
         config['channel_id'] = channel.id
-        config['guild_id'] = interaction.guild.id if interaction.guild else None
+        config['guild_id'] = ctx.guild.id if ctx.guild else None
         
         if self.save_config(config):
+            logger.info(f"Successfully updated config to channel mode: {channel.id}")
             embed = discord.Embed(
                 title="✅ Configuration Updated",
                 description=f"Sensitive messages will now be sent to {channel.mention}.",
                 color=discord.Color.green()
             )
         else:
+            logger.error(f"Failed to save config for channel {channel.id}")
             embed = discord.Embed(
                 title="❌ Error",
                 description="Failed to save configuration. Please try again.",
                 color=discord.Color.red()
             )
         
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await ctx.send(embed=embed, ephemeral=True)
     
-    @app_commands.command(name='sensitive-config-status', description='[OWNER ONLY] View current sensitive message routing configuration')
-    async def config_status(self, interaction: discord.Interaction):
+    @commands.hybrid_command(name='sensitive-config-status', description='[OWNER ONLY] View current sensitive message routing configuration')
+    async def config_status(self, ctx):
         """Show current sensitive message routing configuration"""
-        if not self.is_owner(interaction.user.id):
+        logger.info(f"Config status command called by {ctx.author.id}")
+        
+        if not self.is_owner(ctx.author.id):
             embed = discord.Embed(
                 title="❌ Access Denied",
                 description="Only the bot owner can use this command.",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await ctx.send(embed=embed, ephemeral=True)
             return
         
         config = self.load_config()
+        logger.info(f"Current config: {config}")
         
         embed = discord.Embed(
             title="🔧 Sensitive Message Configuration",
@@ -414,13 +430,13 @@ class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
         
         embed.add_field(
             name="🛠️ Configuration Commands",
-            value="`/sensitive-config-dm` - Route to your DM\n"
-                  "`/sensitive-config-channel` - Route to a channel\n"
-                  "`/sensitive-config-status` - View this status",
+            value="`!sensitive-config-dm` or `/sensitive-config-dm` - Route to your DM\n"
+                  "`!sensitive-config-channel #channel` or `/sensitive-config-channel` - Route to a channel\n"
+                  "`!sensitive-config-status` or `/sensitive-config-status` - View this status",
             inline=False
         )
         
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await ctx.send(embed=embed, ephemeral=True)
 
 async def setup(bot):
     """Setup function to add this cog to the bot"""
