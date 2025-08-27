@@ -221,9 +221,10 @@ class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
         embed.add_field(
             name="🔐 Security Features",
             value="• Messages are sent privately (only you can see the response)\n"
-                  "• Information goes directly to the bot owner\n"
+                  "• Information goes to bot owner via DM or configured channel\n"
                   "• No one else in the server can see your message\n"
-                  "• Your user information is included for context",
+                  "• Your user information is included for context\n"
+                  "• Smart fallback if configured channel unavailable",
             inline=False
         )
         
@@ -242,6 +243,15 @@ class SensitiveCommands(commands.Cog, name="🔒 Sensitive Information"):
                   "• The bot owner will receive your Discord username and ID\n"
                   "• Response time may vary depending on availability\n"
                   "• Don't share illegal content or spam",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="🔧 Routing System",
+            value="• Bot owner can configure where messages are sent\n"
+                  "• Options: Owner's DM or specific channel\n"
+                  "• Auto-fallback to DM if channel has issues\n"
+                  "• You'll be informed where your message was delivered",
             inline=False
         )
         

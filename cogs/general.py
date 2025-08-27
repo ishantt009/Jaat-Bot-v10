@@ -191,7 +191,9 @@ class General(commands.Cog):
             # Sensitive Information (Slash Commands Only)
             sensitive_commands = [
                 "`/sensitive <message>` - Send private info to owner",
-                "`/sensitive-help` - Learn about the system"
+                "`/sensitive-help` - Learn about the system",
+                "**Owner Config:** `/sensitive-config-dm`",
+                "`/sensitive-config-channel` `/sensitive-config-status`"
             ]
             embed.add_field(
                 name="🔒 Sensitive Information",
