@@ -4,6 +4,7 @@ from discord import app_commands
 import time
 import platform
 import os
+from cogs.embed_builder import add_embed_id
 
 class General(commands.Cog):
     """General commands for the bot"""
@@ -20,6 +21,7 @@ class General(commands.Cog):
             description=f"Latency: {round(self.bot.latency * 1000)}ms",
             color=discord.Color.green()
         )
+        add_embed_id(embed)
         await ctx.send(embed=embed)
     
     @commands.hybrid_command(name='hello', aliases=['hi', 'hey'])
@@ -30,6 +32,7 @@ class General(commands.Cog):
             description=f"Hello {ctx.author.mention}! I'm here to help moderate your server.",
             color=discord.Color.blue()
         )
+        add_embed_id(embed)
         await ctx.send(embed=embed)
     
     @commands.hybrid_command(name='help')
@@ -61,6 +64,7 @@ class General(commands.Cog):
                         value=", ".join([f"`{prefix}{alias}`" for alias in command.aliases]),
                         inline=False
                     )
+                add_embed_id(embed)
                 await ctx.send(embed=embed)
             else:
                 embed = discord.Embed(
@@ -68,6 +72,7 @@ class General(commands.Cog):
                     description=f"No command named `{command_name}` found.",
                     color=discord.Color.red()
                 )
+                add_embed_id(embed)
                 await ctx.send(embed=embed)
         else:
             # Show all commands in one compact embed
@@ -189,6 +194,7 @@ class General(commands.Cog):
                 inline=True
             )
             
+            add_embed_id(embed)
             await ctx.send(embed=embed)
     
     @commands.hybrid_command(name='info')
@@ -220,6 +226,7 @@ class General(commands.Cog):
         embed.set_thumbnail(url=self.bot.user.avatar.url if self.bot.user.avatar else None)
         embed.set_footer(text=f"Bot ID: {self.bot.user.id}")
         
+        add_embed_id(embed)
         await ctx.send(embed=embed)
     
     @commands.hybrid_command(name='uptime')
@@ -241,6 +248,7 @@ class General(commands.Cog):
             color=discord.Color.green()
         )
         
+        add_embed_id(embed)
         await ctx.send(embed=embed)
 
 async def setup(bot):

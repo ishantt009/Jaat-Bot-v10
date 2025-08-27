@@ -112,6 +112,38 @@ class EmbedStorage:
 # Global embed storage instance
 embed_storage = EmbedStorage()
 
+def add_embed_id(embed, save_permanently=False, user_id=None):
+    """Add an ID to any embed. Optionally save permanently."""
+    if save_permanently and user_id:
+        # For user-created embeds, save permanently
+        embed_data = EmbedData()
+        embed_data.title = embed.title
+        embed_data.description = embed.description
+        embed_data.color = embed.color.value if embed.color else 0x2F3136
+        if embed.footer:
+            embed_data.footer = embed.footer.text
+            embed_data.footer_icon = embed.footer.icon_url
+        if embed.author:
+            embed_data.author = embed.author.name
+            embed_data.author_icon = embed.author.icon_url
+        if embed.thumbnail:
+            embed_data.thumbnail = embed.thumbnail.url
+        if embed.image:
+            embed_data.image = embed.image.url
+        embed_data.fields = [{'name': f.name, 'value': f.value, 'inline': f.inline} for f in embed.fields]
+        embed_data.timestamp = embed.timestamp is not None
+        
+        embed_id = embed_storage.save_embed(embed_data, user_id=user_id)
+    else:
+        # For system embeds, generate temporary ID
+        embed_id = str(uuid.uuid4())[:6]  # Shorter ID for system embeds
+    
+    # Add ID to footer
+    current_footer = embed.footer.text if embed.footer else ""
+    embed.set_footer(text=f"{current_footer} • ID: {embed_id}".strip(" • "))
+    
+    return embed_id
+
 class EmbedData:
     def __init__(self):
         self.title = None
@@ -612,6 +644,7 @@ class EmbedBuilder(commands.Cog):
                 description="You need moderator permissions to use the embed builder.",
                 color=discord.Color.red()
             )
+            add_embed_id(embed)
             await ctx.send(embed=embed, ephemeral=True)
             return
         
@@ -630,6 +663,7 @@ class EmbedBuilder(commands.Cog):
             inline=False
         )
         
+        add_embed_id(embed)
         await ctx.send(embed=embed, view=view)
     
     @commands.hybrid_command(name='say')
