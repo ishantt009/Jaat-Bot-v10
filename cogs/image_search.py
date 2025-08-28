@@ -52,9 +52,10 @@ class ImageSearch(commands.Cog):
             if not image_urls:
                 embed = discord.Embed(
                     title="❌ No Results",
-                    description=f"No images found for: `{query}`",
+                    description=f"No images found for: `{query}`\n\nThis could be due to:\n• Google blocking the request\n• No valid image URLs found\n• Image search temporarily unavailable",
                     color=discord.Color.orange()
                 )
+                embed.set_footer(text="Try a different search term or try again later")
                 await interaction.followup.send(embed=embed)
                 return
             
@@ -101,8 +102,9 @@ class ImageSearch(commands.Cog):
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
             
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers, timeout=10) as response:
+            timeout = aiohttp.ClientTimeout(total=10)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(url, headers=headers) as response:
                     if response.status != 200:
                         return []
                     
@@ -112,10 +114,13 @@ class ImageSearch(commands.Cog):
                     # Look for image URLs in the HTML
                     image_urls = []
                     
-                    # Pattern to find image URLs
+                    # Pattern to find image URLs - Updated for current Google Images structure
                     patterns = [
                         r'"(https?://[^"]*\.(?:jpg|jpeg|png|gif|webp))"',
                         r"'(https?://[^']*\.(?:jpg|jpeg|png|gif|webp))'",
+                        r'\["(https?://[^"]*\.(?:jpg|jpeg|png|gif|webp))",\d+,\d+\]',
+                        r'"(https?://encrypted-tbn\d*\.gstatic\.com/images\?[^"]+)"',
+                        r'"(https?://[^"]*\.googleusercontent\.com/[^"]*\.[^"]*)"',
                         r'src="(https?://[^"]*)"'
                     ]
                     
@@ -137,6 +142,12 @@ class ImageSearch(commands.Cog):
                             seen.add(url)
                             unique_urls.append(url)
                     
+                    # Debug logging
+                    if unique_urls:
+                        logger.info(f"Found {len(unique_urls)} image URLs for '{query}': {unique_urls[0][:100]}...")
+                    else:
+                        logger.warning(f"No valid image URLs found for '{query}' from {len(image_urls)} candidates")
+                    
                     return unique_urls[:max_results]
                     
         except Exception as e:
@@ -154,13 +165,19 @@ class ImageSearch(commands.Cog):
             if not url.startswith(('http://', 'https://')):
                 return False
             
-            # Must end with image extension
+            # Check for image extensions or known image domains
             image_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp')
+            image_domains = ('gstatic.com', 'googleusercontent.com', 'imgur.com', 'wikimedia.org')
             url_lower = url.lower()
             
             # Check if URL contains image extension
             for ext in image_extensions:
                 if ext in url_lower:
+                    return True
+            
+            # Check for known image hosting domains
+            for domain in image_domains:
+                if domain in url_lower:
                     return True
             
             return False
