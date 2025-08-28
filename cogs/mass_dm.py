@@ -4,6 +4,7 @@ from discord import app_commands
 import asyncio
 import logging
 import os
+import json
 from utils.permissions import has_admin_permissions
 
 logger = logging.getLogger(__name__)
@@ -14,17 +15,93 @@ class MassDM(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.rate_limit = float(os.getenv('MASS_DM_RATE_LIMIT', '1'))  # Messages per second
+        self.storage_file = "data/saved_embeds.json"
+    
+    def load_embed_by_id(self, embed_id):
+        """Load an embed by ID from storage"""
+        try:
+            with open(self.storage_file, 'r') as f:
+                embeds = json.load(f)
+            
+            if embed_id in embeds:
+                embed_data = embeds[embed_id]['data']
+                embed = discord.Embed(
+                    title=embed_data.get('title'),
+                    description=embed_data.get('description'),
+                    color=embed_data.get('color', 0x2F3136)
+                )
+                
+                if embed_data.get('footer'):
+                    embed.set_footer(
+                        text=embed_data['footer'],
+                        icon_url=embed_data.get('footer_icon')
+                    )
+                
+                if embed_data.get('author'):
+                    embed.set_author(
+                        name=embed_data['author'],
+                        icon_url=embed_data.get('author_icon')
+                    )
+                
+                if embed_data.get('thumbnail'):
+                    embed.set_thumbnail(url=embed_data['thumbnail'])
+                
+                if embed_data.get('image'):
+                    embed.set_image(url=embed_data['image'])
+                
+                for field in embed_data.get('fields', []):
+                    embed.add_field(
+                        name=field['name'],
+                        value=field['value'],
+                        inline=field.get('inline', True)
+                    )
+                
+                if embed_data.get('timestamp'):
+                    embed.timestamp = discord.utils.utcnow()
+                
+                return embed
+            return None
+        except:
+            return None
+    
+    def parse_message_content(self, content):
+        """Parse message content to detect embed IDs"""
+        content = content.strip()
+        
+        # Check if it's an embed ID format: embed:ID
+        if content.lower().startswith('embed:'):
+            embed_id = content[6:].strip()
+            embed = self.load_embed_by_id(embed_id)
+            if embed:
+                return {'type': 'embed', 'content': embed, 'embed_id': embed_id}
+            else:
+                return {'type': 'error', 'message': f'Embed with ID `{embed_id}` not found.'}
+        
+        # Regular text message
+        return {'type': 'text', 'content': content}
     
     @commands.hybrid_command(name='massdm')
-    @app_commands.describe(message="The message to send to all members")
+    @app_commands.describe(message="The message to send to all members (or embed:ID to use a saved embed)")
     @commands.guild_only()
     async def mass_dm(self, ctx, *, message):
-        """Send a DM to all members in the server"""
+        """Send a DM to all members in the server. Use 'embed:ID' to send a saved embed."""
         # Permission check - only admins can use mass DM
         if not has_admin_permissions(ctx.author, ctx.guild):
             embed = discord.Embed(
                 title="❌ Missing Permissions",
                 description="You need administrator permissions to use this command.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+            return
+        
+        # Parse message content
+        parsed = self.parse_message_content(message)
+        
+        if parsed['type'] == 'error':
+            embed = discord.Embed(
+                title="❌ Error",
+                description=parsed['message'],
                 color=discord.Color.red()
             )
             await ctx.send(embed=embed)
@@ -36,7 +113,11 @@ class MassDM(commands.Cog):
             description=f"Are you sure you want to send this message to **{len(ctx.guild.members)}** members?",
             color=discord.Color.orange()
         )
-        embed.add_field(name="Message Preview", value=message[:1000] + ("..." if len(message) > 1000 else ""), inline=False)
+        if parsed['type'] == 'embed':
+            embed.add_field(name="Content Type", value=f"📋 Saved Embed (ID: `{parsed['embed_id']}`)", inline=False)
+            embed.add_field(name="Embed Preview", value=f"**Title:** {parsed['content'].title or 'None'}\n**Description:** {(parsed['content'].description or 'None')[:100]}{'...' if parsed['content'].description and len(parsed['content'].description) > 100 else ''}", inline=False)
+        else:
+            embed.add_field(name="Message Preview", value=message[:1000] + ("..." if len(message) > 1000 else ""), inline=False)
         embed.add_field(name="Server", value=ctx.guild.name, inline=True)
         embed.add_field(name="Requested by", value=ctx.author.mention, inline=True)
         embed.set_footer(text="React with ✅ to confirm or ❌ to cancel (30 seconds)")
@@ -72,21 +153,33 @@ class MassDM(commands.Cog):
             return
         
         # Start mass DM process
-        await self._send_mass_dm(ctx, confirmation_msg, message, ctx.guild.members)
+        await self._send_mass_dm(ctx, confirmation_msg, parsed, ctx.guild.members)
     
     @commands.hybrid_command(name='massdmrole')
     @app_commands.describe(
         role="The role to send DMs to",
-        message="The message to send"
+        message="The message to send (or embed:ID to use a saved embed)"
     )
     @commands.guild_only()
     async def mass_dm_role(self, ctx, role: discord.Role, *, message):
-        """Send a DM to all members with a specific role"""
+        """Send a DM to all members with a specific role. Use 'embed:ID' to send a saved embed."""
         # Permission check - only admins can use mass DM
         if not has_admin_permissions(ctx.author, ctx.guild):
             embed = discord.Embed(
                 title="❌ Missing Permissions",
                 description="You need administrator permissions to use this command.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+            return
+        
+        # Parse message content
+        parsed = self.parse_message_content(message)
+        
+        if parsed['type'] == 'error':
+            embed = discord.Embed(
+                title="❌ Error",
+                description=parsed['message'],
                 color=discord.Color.red()
             )
             await ctx.send(embed=embed)
@@ -110,7 +203,11 @@ class MassDM(commands.Cog):
             description=f"Are you sure you want to send this message to **{len(role_members)}** members with the role **{role.name}**?",
             color=discord.Color.orange()
         )
-        embed.add_field(name="Message Preview", value=message[:1000] + ("..." if len(message) > 1000 else ""), inline=False)
+        if parsed['type'] == 'embed':
+            embed.add_field(name="Content Type", value=f"📋 Saved Embed (ID: `{parsed['embed_id']}`)", inline=False)
+            embed.add_field(name="Embed Preview", value=f"**Title:** {parsed['content'].title or 'None'}\n**Description:** {(parsed['content'].description or 'None')[:100]}{'...' if parsed['content'].description and len(parsed['content'].description) > 100 else ''}", inline=False)
+        else:
+            embed.add_field(name="Message Preview", value=message[:1000] + ("..." if len(message) > 1000 else ""), inline=False)
         embed.add_field(name="Role", value=role.mention, inline=True)
         embed.add_field(name="Server", value=ctx.guild.name, inline=True)
         embed.add_field(name="Requested by", value=ctx.author.mention, inline=True)
@@ -147,21 +244,33 @@ class MassDM(commands.Cog):
             return
         
         # Start mass DM process
-        await self._send_mass_dm(ctx, confirmation_msg, message, role_members)
+        await self._send_mass_dm(ctx, confirmation_msg, parsed, role_members)
     
     @commands.hybrid_command(name='dmusers')
     @app_commands.describe(
         users="Mention the users to send DMs to (space-separated)",
-        message="The message to send"
+        message="The message to send (or embed:ID to use a saved embed)"
     )
     @commands.guild_only()
     async def dm_users(self, ctx, users: commands.Greedy[discord.Member], *, message):
-        """Send a DM to specific mentioned users"""
+        """Send a DM to specific mentioned users. Use 'embed:ID' to send a saved embed."""
         # Permission check - only admins can use mass DM
         if not has_admin_permissions(ctx.author, ctx.guild):
             embed = discord.Embed(
                 title="❌ Missing Permissions",
                 description="You need administrator permissions to use this command.",
+                color=discord.Color.red()
+            )
+            await ctx.send(embed=embed)
+            return
+        
+        # Parse message content
+        parsed = self.parse_message_content(message)
+        
+        if parsed['type'] == 'error':
+            embed = discord.Embed(
+                title="❌ Error",
+                description=parsed['message'],
                 color=discord.Color.red()
             )
             await ctx.send(embed=embed)
@@ -202,7 +311,11 @@ class MassDM(commands.Cog):
             description=f"Are you sure you want to send this message to **{len(valid_users)}** users?",
             color=discord.Color.orange()
         )
-        embed.add_field(name="Message Preview", value=message[:1000] + ("..." if len(message) > 1000 else ""), inline=False)
+        if parsed['type'] == 'embed':
+            embed.add_field(name="Content Type", value=f"📋 Saved Embed (ID: `{parsed['embed_id']}`)", inline=False)
+            embed.add_field(name="Embed Preview", value=f"**Title:** {parsed['content'].title or 'None'}\n**Description:** {(parsed['content'].description or 'None')[:100]}{'...' if parsed['content'].description and len(parsed['content'].description) > 100 else ''}", inline=False)
+        else:
+            embed.add_field(name="Message Preview", value=message[:1000] + ("..." if len(message) > 1000 else ""), inline=False)
         embed.add_field(name="Recipients", value=user_list, inline=False)
         embed.add_field(name="Server", value=ctx.guild.name, inline=True)
         embed.add_field(name="Requested by", value=ctx.author.mention, inline=True)
@@ -239,9 +352,9 @@ class MassDM(commands.Cog):
             return
         
         # Start DM process
-        await self._send_mass_dm(ctx, confirmation_msg, message, valid_users)
+        await self._send_mass_dm(ctx, confirmation_msg, parsed, valid_users)
     
-    async def _send_mass_dm(self, ctx, status_msg, message, members):
+    async def _send_mass_dm(self, ctx, status_msg, parsed_content, members):
         """Internal method to handle the mass DM sending process"""
         # Filter out bots
         human_members = [member for member in members if not member.bot]
@@ -256,15 +369,24 @@ class MassDM(commands.Cog):
             await status_msg.edit(embed=embed)
             return
         
-        # Create the DM embed
-        dm_embed = discord.Embed(
-            title=f"Message from {ctx.guild.name}",
-            description=message,
-            color=discord.Color.blue()
-        )
-        dm_embed.set_footer(text=f"Sent by {ctx.author} • {ctx.guild.name}")
-        if ctx.guild.icon:
-            dm_embed.set_thumbnail(url=ctx.guild.icon.url)
+        # Prepare the content to send
+        if parsed_content['type'] == 'embed':
+            # Use the saved embed but modify footer to show it's from the server
+            dm_content = parsed_content['content']
+            current_footer = dm_content.footer.text if dm_content.footer else ""
+            dm_content.set_footer(text=f"{current_footer} • Sent by {ctx.author} • {ctx.guild.name}".strip(" • "))
+            if ctx.guild.icon:
+                dm_content.set_thumbnail(url=ctx.guild.icon.url)
+        else:
+            # Create the DM embed for text message
+            dm_content = discord.Embed(
+                title=f"Message from {ctx.guild.name}",
+                description=parsed_content['content'],
+                color=discord.Color.blue()
+            )
+            dm_content.set_footer(text=f"Sent by {ctx.author} • {ctx.guild.name}")
+            if ctx.guild.icon:
+                dm_content.set_thumbnail(url=ctx.guild.icon.url)
         
         # Progress tracking
         successful = 0
@@ -285,7 +407,7 @@ class MassDM(commands.Cog):
         # Send DMs with rate limiting
         for member in human_members:
             try:
-                await member.send(embed=dm_embed)
+                await member.send(embed=dm_content)
                 successful += 1
                 logger.info(f"Mass DM sent to {member} from {ctx.guild.name}")
             except discord.Forbidden:

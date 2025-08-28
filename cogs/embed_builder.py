@@ -737,11 +737,11 @@ class EmbedBuilder(commands.Cog):
     @commands.hybrid_command(name='dm')
     @app_commands.describe(
         user="User to send the DM to",
-        message="Message to send"
+        message="Message to send (or embed:ID to use a saved embed)"
     )
     @commands.guild_only()
     async def dm_user(self, ctx, user: discord.Member, *, message: str):
-        """Send a direct message to a user"""
+        """Send a direct message to a user. Use 'embed:ID' to send a saved embed."""
         # Permission check
         if not has_mod_permissions(ctx.author, ctx.guild):
             embed = discord.Embed(
@@ -752,15 +752,85 @@ class EmbedBuilder(commands.Cog):
             await ctx.send(embed=embed, ephemeral=True)
             return
         
-        # Check message length
-        if len(message) > 2000:
-            embed = discord.Embed(
-                title="❌ Message Too Long",
-                description="Message cannot exceed 2000 characters.",
-                color=discord.Color.red()
+        # Parse message content to check for embed ID
+        if message.lower().startswith('embed:'):
+            embed_id = message[6:].strip()
+            saved_embed_data = embed_storage.load_embed(embed_id)
+            
+            if not saved_embed_data:
+                embed = discord.Embed(
+                    title="❌ Embed Not Found",
+                    description=f"Embed with ID `{embed_id}` not found.",
+                    color=discord.Color.red()
+                )
+                await ctx.send(embed=embed, ephemeral=True)
+                return
+            
+            # Convert saved embed data to Discord embed
+            embed_data = saved_embed_data['data']
+            dm_content = discord.Embed(
+                title=embed_data.get('title'),
+                description=embed_data.get('description'),
+                color=embed_data.get('color', 0x2F3136)
             )
-            await ctx.send(embed=embed, ephemeral=True)
-            return
+            
+            if embed_data.get('footer'):
+                dm_content.set_footer(
+                    text=embed_data['footer'],
+                    icon_url=embed_data.get('footer_icon')
+                )
+            
+            if embed_data.get('author'):
+                dm_content.set_author(
+                    name=embed_data['author'],
+                    icon_url=embed_data.get('author_icon')
+                )
+            
+            if embed_data.get('thumbnail'):
+                dm_content.set_thumbnail(url=embed_data['thumbnail'])
+            
+            if embed_data.get('image'):
+                dm_content.set_image(url=embed_data['image'])
+            
+            for field in embed_data.get('fields', []):
+                dm_content.add_field(
+                    name=field['name'],
+                    value=field['value'],
+                    inline=field.get('inline', True)
+                )
+            
+            if embed_data.get('timestamp'):
+                dm_content.timestamp = discord.utils.utcnow()
+            
+            # Add server info to footer
+            current_footer = dm_content.footer.text if dm_content.footer else ""
+            dm_content.set_footer(text=f"{current_footer} • Sent by {ctx.author} • {ctx.guild.name}".strip(" • "))
+            
+            is_embed_message = True
+            preview_text = f"Saved Embed (ID: `{embed_id}`)"
+            
+        else:
+            # Regular text message
+            # Check message length
+            if len(message) > 2000:
+                embed = discord.Embed(
+                    title="❌ Message Too Long",
+                    description="Message cannot exceed 2000 characters.",
+                    color=discord.Color.red()
+                )
+                await ctx.send(embed=embed, ephemeral=True)
+                return
+            
+            # Create DM embed for text message
+            dm_content = discord.Embed(
+                title=f"Message from {ctx.guild.name}",
+                description=message,
+                color=discord.Color.blue()
+            )
+            dm_content.set_footer(text=f"Sent by {ctx.author} • {ctx.guild.name}")
+            
+            is_embed_message = False
+            preview_text = message[:100] + ("..." if len(message) > 100 else "")
         
         # Can't DM bots
         if user.bot:
@@ -772,20 +842,13 @@ class EmbedBuilder(commands.Cog):
             await ctx.send(embed=embed, ephemeral=True)
             return
         
-        # Create DM embed
-        dm_embed = discord.Embed(
-            title=f"Message from {ctx.guild.name}",
-            description=message,
-            color=discord.Color.blue()
-        )
-        dm_embed.set_footer(text=f"Sent by {ctx.author} • {ctx.guild.name}")
-        
-        if ctx.guild.icon:
-            dm_embed.set_thumbnail(url=ctx.guild.icon.url)
+        # Add server thumbnail if not already set
+        if ctx.guild.icon and not is_embed_message:
+            dm_content.set_thumbnail(url=ctx.guild.icon.url)
         
         # Try to send DM
         try:
-            await user.send(embed=dm_embed)
+            await user.send(embed=dm_content)
             
             # Send confirmation
             embed = discord.Embed(
@@ -795,7 +858,7 @@ class EmbedBuilder(commands.Cog):
             )
             embed.add_field(name="👤 Recipient", value=user.mention, inline=True)
             embed.add_field(name="👮 Sender", value=ctx.author.mention, inline=True)
-            embed.add_field(name="📝 Preview", value=message[:100] + ("..." if len(message) > 100 else ""), inline=False)
+            embed.add_field(name="📝 Preview", value=preview_text, inline=False)
             
             await ctx.send(embed=embed)
             logger.info(f"{ctx.author} sent DM to {user} from {ctx.guild.name}")
