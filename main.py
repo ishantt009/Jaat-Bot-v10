@@ -59,10 +59,15 @@ class DiscordBot(commands.Bot):
         
         # Sync slash commands globally
         try:
+            # List all registered commands for debugging
+            all_commands = [cmd.name for cmd in self.tree.get_commands()]
+            logger.info(f"Registered slash commands: {', '.join(all_commands)}")
+            
+            # Sync commands globally
             synced = await self.tree.sync()
             logger.info(f"Synced {len(synced)} slash commands globally")
             
-            # Also try guild-specific sync for faster updates
+            # Also try guild-specific sync for immediate availability
             for guild in self.guilds:
                 try:
                     guild_synced = await self.tree.sync(guild=guild)
