@@ -181,8 +181,8 @@ class ImageSearch(commands.Cog):
             # Encode the search query
             encoded_query = urllib.parse.quote_plus(query)
             
-            # Google Images search URL with better parameters
-            url = f"https://www.google.com/search?q={encoded_query}&tbm=isch&safe=active&tbs=isz:m"
+            # Google Images search URL with better parameters (no safe search)
+            url = f"https://www.google.com/search?q={encoded_query}&tbm=isch&tbs=isz:m"
             
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -326,8 +326,8 @@ class ImageSearch(commands.Cog):
             # Encode the search query
             encoded_query = urllib.parse.quote_plus(query)
             
-            # Google Video search URL
-            url = f"https://www.google.com/search?q={encoded_query}&tbm=vid&safe=active"
+            # Google Video search URL (no safe search)
+            url = f"https://www.google.com/search?q={encoded_query}&tbm=vid"
             
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
