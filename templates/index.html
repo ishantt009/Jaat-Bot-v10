@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Bot Development Environment</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1><i class="fab fa-discord"></i> Bot Dev Environment</h1>
+                
+                <!-- Bot Status -->
+                <div id="botStatus" class="bot-status stopped">
+                    <i class="fas fa-circle"></i> Bot Stopped
+                </div>
+                
+                <!-- Bot Controls -->
+                <div class="bot-controls">
+                    <button id="startBot" class="btn btn-success">
+                        <i class="fas fa-play"></i> Start
+                    </button>
+                    <button id="stopBot" class="btn btn-danger" disabled>
+                        <i class="fas fa-stop"></i> Stop
+                    </button>
+                    <button id="configBot" class="btn btn-primary">
+                        <i class="fas fa-cog"></i> Config
+                    </button>
+                </div>
+                
+                <!-- Bot Info -->
+                <div id="botInfo" class="bot-info" style="font-size: 11px; color: #888;">
+                    <div>Uptime: <span id="uptime">--</span></div>
+                    <div>Memory: <span id="memory">--</span></div>
+                    <div>PID: <span id="pid">--</span></div>
+                </div>
+            </div>
+            
+            <!-- File Upload -->
+            <div class="file-upload">
+                <h3><i class="fas fa-upload"></i> Upload Files</h3>
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 24px; margin-bottom: 10px; color: #007acc;"></i>
+                    <div>Click to upload or drag files here</div>
+                    <small>Supports: .py, .txt, .json, .yaml, .md</small>
+                </div>
+                <input type="file" id="fileInput" multiple accept=".py,.txt,.json,.yaml,.yml,.md">
+                
+                <div style="margin-top: 10px;">
+                    <button id="newFileBtn" class="btn btn-primary" style="width: 100%;">
+                        <i class="fas fa-plus"></i> New File
+                    </button>
+                </div>
+            </div>
+            
+            <!-- File List -->
+            <div class="file-list">
+                <h3><i class="fas fa-folder-open"></i> Project Files</h3>
+                <div id="fileList">
+                    <div style="text-align: center; color: #888; padding: 20px;">
+                        No files uploaded yet
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="main-header">
+                <h2 id="currentFileName">
+                    <i class="fas fa-code"></i> No file selected
+                </h2>
+                <div>
+                    <button id="saveFile" class="btn btn-success" disabled>
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+            </div>
+            
+            <div class="editor-container">
+                <div id="editor"></div>
+            </div>
+            
+            <!-- Bottom Panel -->
+            <div class="bottom-panel">
+                <div class="panel-tabs">
+                    <button class="tab active" data-tab="console">
+                        <i class="fas fa-terminal"></i> Console
+                    </button>
+                    <button class="tab" data-tab="environment">
+                        <i class="fas fa-env"></i> Environment
+                    </button>
+                </div>
+                
+                <div class="tab-content">
+                    <!-- Console Tab -->
+                    <div id="console" class="console tab-pane active">
+                        <div style="margin-bottom: 10px;">
+                            <button id="clearConsole" class="btn btn-primary" style="font-size: 11px;">
+                                <i class="fas fa-trash"></i> Clear
+                            </button>
+                        </div>
+                        <div id="consoleOutput"></div>
+                    </div>
+                    
+                    <!-- Environment Tab -->
+                    <div id="environment" class="tab-pane" style="display: none;">
+                        <h4 style="margin-bottom: 15px;">Environment Variables</h4>
+                        <div class="env-form">
+                            <div class="env-var">
+                                <input type="text" class="env-input" placeholder="Variable Name" id="envName">
+                                <input type="text" class="env-input" placeholder="Variable Value" id="envValue">
+                                <button id="addEnvVar" class="btn btn-primary">Add</button>
+                            </div>
+                            <div id="envVarsList"></div>
+                            <button id="saveEnvVars" class="btn btn-success">Save Environment</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <span>Ready</span>
+        <span id="connectionStatus">Connected</span>
+        <span id="statusInfo"></span>
+    </div>
+    
+    <!-- Bot Configuration Modal -->
+    <div id="configModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close">&times;</span>
+                <h3>Bot Configuration</h3>
+            </div>
+            <form id="configForm">
+                <div class="form-group">
+                    <label for="botToken">Discord Bot Token:</label>
+                    <input type="password" id="botToken" placeholder="Enter bot token">
+                    <small style="color: #888;">Or set DISCORD_BOT_TOKEN environment variable</small>
+                </div>
+                <div class="form-group">
+                    <label for="mainFile">Main Bot File:</label>
+                    <select id="mainFile">
+                        <option value="">Select main file...</option>
+                    </select>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn btn-primary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success">Start Bot</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- New File Modal -->
+    <div id="newFileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close">&times;</span>
+                <h3>Create New File</h3>
+            </div>
+            <form id="newFileForm">
+                <div class="form-group">
+                    <label for="newFileName">File Name:</label>
+                    <input type="text" id="newFileName" placeholder="e.g., main.py" required>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <button type="button" class="btn btn-primary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-success">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.30.1/min/vs/loader.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
