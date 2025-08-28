@@ -47,6 +47,7 @@ class DiscordBot(commands.Bot):
             await self.load_extension('cogs.quota_system')
             await self.load_extension('cogs.sensitive')
             await self.load_extension('cogs.image_search')
+            await self.load_extension('cogs.ai_chat')
             logger.info("All cogs loaded successfully")
         except Exception as e:
             logger.error(f"Failed to load cogs: {e}")
