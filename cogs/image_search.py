@@ -351,15 +351,47 @@ class ImageSearch(commands.Cog):
                     # Extract video information
                     videos = []
                     
-                    # Patterns to find YouTube videos and other video sources
-                    youtube_pattern = r'href="(/url\?q=https://www\.youtube\.com/watch\?v=([^"&]+))'
-                    title_pattern = r'<h3[^>]*><a[^>]*>([^<]+)</a></h3>'
+                    # Updated patterns to find YouTube videos and other video sources
+                    youtube_patterns = [
+                        r'href="(/url\?q=https://www\.youtube\.com/watch\?v=([^"&]+))',
+                        r'"https://www\.youtube\.com/watch\?v=([^"&]+)"',
+                        r'/watch\?v=([^"&\s]+)',
+                        r'watch\?v=([A-Za-z0-9_-]{11})'
+                    ]
+                    
+                    title_patterns = [
+                        r'<h3[^>]*><a[^>]*>([^<]+)</a></h3>',
+                        r'"title":"([^"]+)"',
+                        r'<a[^>]*title="([^"]+)"[^>]*>'
+                    ]
+                    
                     duration_pattern = r'<span[^>]*>(\d+:\d+)</span>'
                     thumbnail_pattern = r'<img[^>]*src="(https://i\.ytimg\.com/[^"]+)"'
                     
-                    # Find YouTube URLs
-                    youtube_matches = re.findall(youtube_pattern, html)
-                    titles = re.findall(title_pattern, html, re.DOTALL)
+                    # Find YouTube URLs using multiple patterns
+                    youtube_matches = []
+                    video_ids = set()  # To avoid duplicates
+                    
+                    for pattern in youtube_patterns:
+                        matches = re.findall(pattern, html)
+                        for match in matches:
+                            if isinstance(match, tuple):
+                                video_id = match[1] if len(match) > 1 else match[0]
+                            else:
+                                video_id = match
+                            
+                            if len(video_id) == 11 and video_id not in video_ids:  # YouTube video IDs are 11 chars
+                                video_ids.add(video_id)
+                                youtube_matches.append(('', video_id))
+                    
+                    # Find titles using multiple patterns
+                    titles = []
+                    for pattern in title_patterns:
+                        found_titles = re.findall(pattern, html, re.DOTALL)
+                        titles.extend(found_titles)
+                        if len(titles) >= len(youtube_matches):
+                            break
+                    
                     durations = re.findall(duration_pattern, html)
                     thumbnails = re.findall(thumbnail_pattern, html)
                     
@@ -377,8 +409,21 @@ class ImageSearch(commands.Cog):
                         if len(videos) >= max_results:
                             break
                     
-                    # If no YouTube results, try general video patterns
-                    if not videos:
+                    # If no YouTube results, try direct YouTube search or fallback
+                    if not videos and query:
+                        # Create a fallback YouTube search URL
+                        fallback_video = {
+                            'url': f'https://www.youtube.com/results?search_query={urllib.parse.quote_plus(query)}',
+                            'title': f'YouTube search for "{query}"',
+                            'duration': None,
+                            'thumbnail': None,
+                            'platform': 'YouTube Search'
+                        }
+                        videos.append(fallback_video)
+                        logger.info(f"Using fallback YouTube search for '{query}'")
+                        
+                    # Also try other video platforms if still no results
+                    if len(videos) == 0:
                         general_patterns = [
                             r'href="([^"]*(?:vimeo\.com|dailymotion\.com|twitch\.tv)[^"]*)"',
                             r'"(https://[^"]*\.(?:mp4|avi|mov|wmv|flv|webm))"'
@@ -402,10 +447,11 @@ class ImageSearch(commands.Cog):
                                 break
                     
                     # Debug logging
+                    logger.info(f"Video search for '{query}': Found {len(youtube_matches)} video IDs, {len(titles)} titles")
                     if videos:
                         logger.info(f"Found {len(videos)} video results for '{query}': {videos[0]['url']}")
                     else:
-                        logger.warning(f"No valid video results found for '{query}'")
+                        logger.warning(f"No valid video results found for '{query}' - debug info: {len(video_ids)} unique IDs found")
                     
                     return videos
                     
