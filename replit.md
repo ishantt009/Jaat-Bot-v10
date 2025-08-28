@@ -1,88 +1,66 @@
-# Overview
+# Discord Bot
 
-This is a Discord bot development environment built with Python and discord.py. It provides a complete, production-ready foundation for creating Discord bots with both text commands (prefix-based) and slash commands support. The project emphasizes modularity, proper error handling, and development-friendly features like hot reloading and comprehensive logging.
+## Overview
 
-# User Preferences
+A Python-based Discord bot built with the discord.py library featuring basic command handling, event management, and message processing capabilities. The bot provides essential functionality including ping commands, help systems, welcome messages, and comprehensive logging. The architecture follows a modular design pattern separating configuration, commands, events, and main application logic into distinct modules.
+
+## User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-# System Architecture
+## System Architecture
 
-## Core Bot Architecture
-- **Main Bot Class**: `DiscordBot` extends `commands.Bot` with enhanced functionality and configuration management
-- **Modular Design**: Commands and events are organized into separate cogs (modules) for better maintainability
-- **Dual Command System**: Supports both traditional text commands (`!ping`) and modern slash commands (`/ping`)
-- **Configuration Management**: Environment-based configuration using `Config` class with `.env` file support
+### Application Structure
+The bot follows a modular architecture with clear separation of concerns:
+- **Main Entry Point** (`main.py`): Custom bot class extending discord.py's commands.Bot with proper intent configuration
+- **Commands Module** (`bot/commands.py`): Centralized command handlers using discord.py's command framework
+- **Events Module** (`bot/events.py`): Event listeners for Discord events like guild joins and message handling
+- **Configuration Module** (`bot/config.py`): Environment-based configuration management with validation
 
-## Command Structure
-- **Cog-based Organization**: Commands are grouped into logical categories (basic, admin) using discord.py's Cog system
-- **Permission Handling**: Built-in permission checks, especially for admin commands
-- **Error Handling**: Comprehensive error handling with user-friendly error messages and logging
+### Framework Choice
+Built on discord.py library which provides:
+- Robust async/await pattern for handling Discord's WebSocket connections
+- Built-in command framework with decorators for easy command registration
+- Comprehensive event system for reacting to Discord events
+- Built-in error handling and rate limiting
 
-## Event System
-- **Event Handlers**: Organized into separate modules (ready, message, error events)
-- **Automatic Processing**: Message events automatically process both regular messages and commands
-- **Bot Mentions**: Special handling for when the bot is mentioned in messages
-- **Guild Management**: Tracks bot joining/leaving servers with proper logging
+### Configuration Management
+Uses python-dotenv for environment variable management:
+- Bot token and sensitive data stored in environment variables
+- Configurable command prefixes and bot settings
+- Configuration validation to ensure required settings are present
 
-## Logging System
-- **Structured Logging**: Multi-level logging (DEBUG, INFO, WARNING, ERROR, CRITICAL) with timestamps
-- **Bot-specific Logger**: Custom `BotLogger` class for Discord-specific events
-- **Console and File Output**: Configurable output to console and optional file logging
-- **Debug Mode**: Enhanced logging and error reporting in development mode
+### Logging Architecture
+Implements dual logging approach:
+- File-based logging (`bot.log`) for persistent storage
+- Console logging for real-time monitoring during development
+- Structured logging format with timestamps and log levels
 
-## Configuration Management
-- **Environment Variables**: All sensitive data (tokens, URLs) stored in environment variables
-- **Development vs Production**: Different behaviors based on debug flag
-- **Validation**: Configuration validation to ensure required settings are present
-- **Extensible Settings**: Easy to add new configuration options
+### Command System
+Uses discord.py's command framework with:
+- Decorator-based command registration
+- Embed-based responses for rich message formatting
+- Error handling and validation built into command structure
+- Modular command organization for easy maintenance
 
-## Entry Points
-- **Multiple Entry Points**: Both `main.py` and `run.py` for flexibility in deployment
-- **Graceful Startup**: Proper initialization sequence with validation and error handling
-- **Clean Shutdown**: Handles interrupts and errors gracefully
+### Event Handling
+Event-driven architecture handling:
+- Guild join events with automatic welcome messages
+- Message processing and bot mentions
+- Graceful error handling for permission issues
 
-# Recent Changes
+## External Dependencies
 
-## AI Chat System (Latest)
-- **Channel-Specific AI Chat**: AI responds to messages in enabled channels using OpenAI GPT-5
-- **Smart Response Logic**: Responds to mentions, replies, and randomly (20% chance) for natural conversation
-- **Rate Limiting**: Prevents spam with 10-second cooldown per user
-- **Management Commands**: `/ai-enable`, `/ai-disable`, `/ai-status` for channel control
-- **Intelligent Responses**: Context-aware responses using latest OpenAI model
+### Core Libraries
+- **discord.py**: Primary Discord API wrapper and bot framework
+- **python-dotenv**: Environment variable management for configuration
 
-## Enhanced Embed ID Support
-- **Universal Embed IDs**: All messaging commands now support `embed:ID` format
-- **Mass DM Integration**: `/massdm`, `/massdmrole`, `/dmusers` support saved embeds
-- **Individual DM Support**: `/dm` command supports embed IDs
-- **Smart Parsing**: Automatic detection and loading of saved embeds
+### Discord API Integration
+- Discord Developer Portal for bot token generation
+- Discord Gateway WebSocket for real-time event handling
+- Discord REST API for message sending and guild management
 
-## Updated Help System
-- **Complete Command Coverage**: All commands now included in help embed
-- **New Sections**: AI Chat System and Staff Quota System added
-- **Better Organization**: Commands grouped by functionality with clear descriptions
-
-# External Dependencies
-
-## Core Framework
-- **discord.py**: Primary Discord API wrapper for bot functionality
-- **asyncio**: Built-in Python library for asynchronous programming
-
-## AI Integration
-- **openai**: Official OpenAI Python client for AI chat responses
-- **GPT-5 Model**: Latest OpenAI model for intelligent conversation
-
-## Configuration Management
-- **python-dotenv**: Loads environment variables from `.env` files for local development
-
-## Logging
-- **Built-in logging**: Uses Python's standard logging module with custom formatting
-
-## Development Tools
-- **Hot Reloading**: Built-in extension reloading for development
-- **Debug Mode**: Enhanced error reporting and logging during development
-
-## Discord Integration
-- **Bot Intents**: Configured for message content, guild access, and message handling
-- **Application Commands**: Full slash command support with Discord's application command system
-- **Presence Management**: Dynamic presence updates showing server count and help information
+### Runtime Environment
+- Python 3.8+ requirement for async/await and modern language features
+- File system access for logging and configuration files
+- Environment variable system for secure credential management

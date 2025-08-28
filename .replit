@@ -24,11 +24,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python main.py"
+args = "pip install discord.py python-dotenv && python main.py"
 
 [workflows.workflow.metadata]
 outputType = "console"
-
-[[ports]]
-localPort = 5000
-externalPort = 80
