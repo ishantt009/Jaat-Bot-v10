@@ -177,29 +177,32 @@ class ImageSearch(commands.Cog):
                 await interaction.followup.send(embed=embed)
                 return
             
-            # Create embed with video result
-            video = video_results[0]
+            # Create embed with multiple video results
             embed = discord.Embed(
-                title="🎬 Video Search",
-                description=f"**{query}**",
+                title="🎬 Video Search Results",
+                description=f"**Top {len(video_results)} results for: {query}**",
                 color=discord.Color.red()  # YouTube red
             )
             
-            # Add video information
-            if video.get('title'):
-                embed.add_field(name="📺 Title", value=video['title'][:100], inline=False)
+            # Add each video result as a field
+            for i, video in enumerate(video_results[:5], 1):
+                title = video.get('title', f'Video {i}')[:50] + ("..." if len(video.get('title', '')) > 50 else "")
+                platform = video.get('platform', 'Unknown')
+                duration = f" • {video['duration']}" if video.get('duration') else ""
+                
+                value = f"**Platform:** {platform}{duration}\n[🔗 Watch Video]({video['url']})"
+                
+                embed.add_field(
+                    name=f"{i}. {title}",
+                    value=value,
+                    inline=False
+                )
             
-            if video.get('url'):
-                embed.add_field(name="🔗 Link", value=f"[Watch Video]({video['url']})", inline=True)
+            # Set thumbnail from first video if available
+            if video_results[0].get('thumbnail'):
+                embed.set_thumbnail(url=video_results[0]['thumbnail'])
             
-            if video.get('duration'):
-                embed.add_field(name="⏱️ Duration", value=video['duration'], inline=True)
-            
-            # Set thumbnail if available
-            if video.get('thumbnail'):
-                embed.set_image(url=video['thumbnail'])
-            
-            embed.set_footer(text=f"Requested by {interaction.user.display_name}")
+            embed.set_footer(text=f"Requested by {interaction.user.display_name} • Found {len(video_results)} results")
             
             await interaction.followup.send(embed=embed)
             
@@ -364,7 +367,7 @@ class ImageSearch(commands.Cog):
         except Exception:
             return False
     
-    async def search_google_videos(self, query: str, max_results: int = 1):
+    async def search_google_videos(self, query: str, max_results: int = 5):
         """Search for videos using Google/YouTube"""
         try:
             # Encode the search query
@@ -453,9 +456,55 @@ class ImageSearch(commands.Cog):
                         if len(videos) >= max_results:
                             break
                     
-                    # If no YouTube results, try direct YouTube search or fallback
+                    # Search additional video platforms and general web
+                    if len(videos) < max_results:
+                        # Try broader web search for videos
+                        general_video_search_url = f"https://www.google.com/search?q={encoded_query}+video+site%3Apornhub.com+OR+site%3Axvideos.com+OR+site%3Axhamster.com+OR+site%3Aredtube.com+OR+site%3Ayouporn.com+OR+site%3Avimeo.com+OR+site%3Adailymotion.com"
+                        
+                        try:
+                            async with session.get(general_video_search_url, headers=headers) as web_response:
+                                if web_response.status == 200:
+                                    web_html = await web_response.text()
+                                    
+                                    # Patterns for adult video sites and general video platforms
+                                    adult_patterns = [
+                                        r'href="([^"]*(?:pornhub\.com|xvideos\.com|xhamster\.com|redtube\.com|youporn\.com)[^"]*)"',
+                                        r'href="([^"]*(?:vimeo\.com|dailymotion\.com|twitch\.tv)[^"]*)"',
+                                        r'"(https://[^"]*\.(?:mp4|webm|avi|mov))"'
+                                    ]
+                                    
+                                    for pattern in adult_patterns:
+                                        matches = re.findall(pattern, web_html, re.IGNORECASE)
+                                        for match in matches[:max_results]:
+                                            clean_url = match.replace('/url?q=', '').split('&')[0]
+                                            if self.is_valid_video_url(clean_url) and clean_url not in [v['url'] for v in videos]:
+                                                platform = 'Adult Site'
+                                                if 'pornhub' in clean_url: platform = 'PornHub'
+                                                elif 'xvideos' in clean_url: platform = 'XVideos'
+                                                elif 'xhamster' in clean_url: platform = 'XHamster'
+                                                elif 'redtube' in clean_url: platform = 'RedTube'
+                                                elif 'youporn' in clean_url: platform = 'YouPorn'
+                                                elif 'vimeo' in clean_url: platform = 'Vimeo'
+                                                elif 'dailymotion' in clean_url: platform = 'Dailymotion'
+                                                elif 'twitch' in clean_url: platform = 'Twitch'
+                                                
+                                                video_data = {
+                                                    'url': clean_url,
+                                                    'title': f'{platform} video for "{query}"',
+                                                    'duration': None,
+                                                    'thumbnail': None,
+                                                    'platform': platform
+                                                }
+                                                videos.append(video_data)
+                                                if len(videos) >= max_results:
+                                                    break
+                                        if len(videos) >= max_results:
+                                            break
+                        except Exception as e:
+                            logger.error(f"Error in additional video search: {e}")
+                    
+                    # If still no results, add YouTube search as last resort
                     if not videos and query:
-                        # Create a fallback YouTube search URL
                         fallback_video = {
                             'url': f'https://www.youtube.com/results?search_query={urllib.parse.quote_plus(query)}',
                             'title': f'YouTube search for "{query}"',
