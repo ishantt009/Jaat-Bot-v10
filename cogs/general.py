@@ -177,6 +177,7 @@ class General(commands.Cog):
                 f"`{prefix}embed` - Interactive embed builder",
                 f"`{prefix}embeds` - List your saved embeds",
                 f"`{prefix}viewembed <id>` - View saved embed",
+                f"`{prefix}deleteembed <id>` - Delete saved embed",
                 f"`{prefix}say <msg/embed:id>` - Send as bot",
                 f"`{prefix}saychannel #ch <msg/embed:id>`",
                 f"`{prefix}dm <user> <msg>` - Send DM to user"
@@ -195,6 +196,33 @@ class General(commands.Cog):
             embed.add_field(
                 name="🖼️ Image Search",
                 value="\n".join(image_commands),
+                inline=True
+            )
+            
+            # AI Chat System
+            ai_chat_commands = [
+                f"`{prefix}ai-enable [#channel]` - Enable AI chat",
+                f"`{prefix}ai-disable [#channel]` - Disable AI chat", 
+                f"`{prefix}ai-status` - Show AI chat status"
+            ]
+            embed.add_field(
+                name="🤖 AI Chat System",
+                value="\n".join(ai_chat_commands),
+                inline=True
+            )
+            
+            # Quota System  
+            quota_commands = [
+                f"`{prefix}staffstats [user]` - View staff stats",
+                f"`{prefix}leaderboard` - Top staff members",
+                f"`{prefix}createquota <type> <amount>`",
+                f"`{prefix}addquota <user> <type> <amount>`",
+                f"`{prefix}quotastats` - View quota requirements",
+                f"`{prefix}listquotas` - List all quota types"
+            ]
+            embed.add_field(
+                name="📊 Staff Quota System",
+                value="\n".join(quota_commands),
                 inline=True
             )
             

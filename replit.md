@@ -42,11 +42,35 @@ Preferred communication style: Simple, everyday language.
 - **Graceful Startup**: Proper initialization sequence with validation and error handling
 - **Clean Shutdown**: Handles interrupts and errors gracefully
 
+# Recent Changes
+
+## AI Chat System (Latest)
+- **Channel-Specific AI Chat**: AI responds to messages in enabled channels using OpenAI GPT-5
+- **Smart Response Logic**: Responds to mentions, replies, and randomly (20% chance) for natural conversation
+- **Rate Limiting**: Prevents spam with 10-second cooldown per user
+- **Management Commands**: `/ai-enable`, `/ai-disable`, `/ai-status` for channel control
+- **Intelligent Responses**: Context-aware responses using latest OpenAI model
+
+## Enhanced Embed ID Support
+- **Universal Embed IDs**: All messaging commands now support `embed:ID` format
+- **Mass DM Integration**: `/massdm`, `/massdmrole`, `/dmusers` support saved embeds
+- **Individual DM Support**: `/dm` command supports embed IDs
+- **Smart Parsing**: Automatic detection and loading of saved embeds
+
+## Updated Help System
+- **Complete Command Coverage**: All commands now included in help embed
+- **New Sections**: AI Chat System and Staff Quota System added
+- **Better Organization**: Commands grouped by functionality with clear descriptions
+
 # External Dependencies
 
 ## Core Framework
 - **discord.py**: Primary Discord API wrapper for bot functionality
 - **asyncio**: Built-in Python library for asynchronous programming
+
+## AI Integration
+- **openai**: Official OpenAI Python client for AI chat responses
+- **GPT-5 Model**: Latest OpenAI model for intelligent conversation
 
 ## Configuration Management
 - **python-dotenv**: Loads environment variables from `.env` files for local development
