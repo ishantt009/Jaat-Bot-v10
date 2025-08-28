@@ -20,8 +20,30 @@ class ImageSearch(commands.Cog):
     async def image_search(self, interaction: discord.Interaction, query: str):
         """Search for images using Google"""
         
-        # Check if user has mod permissions
-        if not has_mod_permissions(interaction.user, interaction.guild):
+        # Check if user has mod permissions (only in guilds)
+        if not interaction.guild:
+            embed = discord.Embed(
+                title="❌ Server Only",
+                description="This command can only be used in servers.",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        
+        # Convert User to Member if needed
+        member = interaction.user
+        if not isinstance(member, discord.Member):
+            member = interaction.guild.get_member(interaction.user.id)
+            if not member:
+                embed = discord.Embed(
+                    title="❌ Member Not Found",
+                    description="Could not verify your server membership.",
+                    color=discord.Color.red()
+                )
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                return
+        
+        if not has_mod_permissions(member, interaction.guild):
             embed = discord.Embed(
                 title="❌ Permission Denied",
                 description="You need moderator permissions to use image search.",
@@ -94,8 +116,30 @@ class ImageSearch(commands.Cog):
     async def video_search(self, interaction: discord.Interaction, query: str):
         """Search for videos using Google/YouTube"""
         
-        # Check if user has mod permissions
-        if not has_mod_permissions(interaction.user, interaction.guild):
+        # Check if user has mod permissions (only in guilds)
+        if not interaction.guild:
+            embed = discord.Embed(
+                title="❌ Server Only",
+                description="This command can only be used in servers.",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        
+        # Convert User to Member if needed
+        member = interaction.user
+        if not isinstance(member, discord.Member):
+            member = interaction.guild.get_member(interaction.user.id)
+            if not member:
+                embed = discord.Embed(
+                    title="❌ Member Not Found",
+                    description="Could not verify your server membership.",
+                    color=discord.Color.red()
+                )
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                return
+        
+        if not has_mod_permissions(member, interaction.guild):
             embed = discord.Embed(
                 title="❌ Permission Denied",
                 description="You need moderator permissions to use video search.",
