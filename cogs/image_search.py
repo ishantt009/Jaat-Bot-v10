@@ -95,67 +95,70 @@ class ImageSearch(commands.Cog):
             # Encode the search query
             encoded_query = urllib.parse.quote_plus(query)
             
-            # Google Images search URL
-            url = f"https://www.google.com/search?q={encoded_query}&tbm=isch&safe=active"
+            # Google Images search URL with better parameters
+            url = f"https://www.google.com/search?q={encoded_query}&tbm=isch&safe=active&tbs=isz:m"
             
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate',
+                'DNT': '1',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
             }
             
-            timeout = aiohttp.ClientTimeout(total=10)
+            timeout = aiohttp.ClientTimeout(total=15)
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.get(url, headers=headers) as response:
                     if response.status != 200:
+                        logger.warning(f"Google Images returned status {response.status}")
                         return []
                     
                     html = await response.text()
                     
-                    # Extract image URLs using regex
-                    # Look for image URLs in the HTML
+                    # Extract image URLs using improved regex patterns
                     image_urls = []
                     
-                    # Pattern to find image URLs - Updated for current Google Images structure
-                    patterns = [
-                        r'"(https?://[^"]*\.(?:jpg|jpeg|png|gif|webp))"',
-                        r"'(https?://[^']*\.(?:jpg|jpeg|png|gif|webp))'",
-                        r'\["(https?://[^"]*\.(?:jpg|jpeg|png|gif|webp))",\d+,\d+\]',
-                        r'"(https?://encrypted-tbn\d*\.gstatic\.com/images\?[^"]+)"',
-                        r'"(https?://[^"]*\.googleusercontent\.com/[^"]*\.[^"]*)"',
-                        r'src="(https?://[^"]*)"'
+                    # Primary pattern - looks for Google Images data structure
+                    primary_patterns = [
+                        r'"ou":"(https?://[^"]+\.(?:jpg|jpeg|png|gif|webp))"',
+                        r'\["(https?://[^"]+\.(?:jpg|jpeg|png|gif|webp))",\d+,\d+\]',
+                        r'"(https?://encrypted-tbn\d*\.gstatic\.com/images\?q=tbn:[^"&]+)"'
                     ]
                     
-                    for pattern in patterns:
+                    for pattern in primary_patterns:
                         matches = re.findall(pattern, html, re.IGNORECASE)
                         for match in matches:
-                            if self.is_valid_image_url(match):
+                            if self.is_valid_search_image(match):
                                 image_urls.append(match)
-                                if len(image_urls) >= max_results:
+                                if len(image_urls) >= max_results * 3:  # Get more candidates
                                     break
-                        if len(image_urls) >= max_results:
+                        if len(image_urls) >= max_results * 3:
                             break
                     
-                    # Remove duplicates while preserving order
-                    seen = set()
-                    unique_urls = []
+                    # Filter out Google UI elements and small images
+                    filtered_urls = []
                     for url in image_urls:
-                        if url not in seen:
-                            seen.add(url)
-                            unique_urls.append(url)
+                        if self.is_actual_search_result(url):
+                            filtered_urls.append(url)
+                            if len(filtered_urls) >= max_results:
+                                break
                     
                     # Debug logging
-                    if unique_urls:
-                        logger.info(f"Found {len(unique_urls)} image URLs for '{query}': {unique_urls[0][:100]}...")
+                    if filtered_urls:
+                        logger.info(f"Found {len(filtered_urls)} valid image URLs for '{query}': {filtered_urls[0][:80]}...")
                     else:
-                        logger.warning(f"No valid image URLs found for '{query}' from {len(image_urls)} candidates")
+                        logger.warning(f"No valid search result images found for '{query}' from {len(image_urls)} total URLs")
                     
-                    return unique_urls[:max_results]
+                    return filtered_urls[:max_results]
                     
         except Exception as e:
             logger.error(f"Error searching Google Images: {e}")
             return []
     
-    def is_valid_image_url(self, url: str) -> bool:
-        """Check if URL is a valid image URL"""
+    def is_valid_search_image(self, url: str) -> bool:
+        """Check if URL is a valid image URL for search results"""
         try:
             # Basic URL validation
             if not url or len(url) < 10:
@@ -178,6 +181,52 @@ class ImageSearch(commands.Cog):
             # Check for known image hosting domains
             for domain in image_domains:
                 if domain in url_lower:
+                    return True
+            
+            return False
+            
+        except Exception:
+            return False
+    
+    def is_actual_search_result(self, url: str) -> bool:
+        """Filter out Google UI elements and focus on actual search results"""
+        try:
+            url_lower = url.lower()
+            
+            # Skip Google's own UI icons and small images
+            ui_indicators = [
+                'al-icon', 'logo', 'btn_', 'arrow', 'close', 'menu',
+                'search_', 'nav_', 'footer', 'header', 'spinner'
+            ]
+            
+            for indicator in ui_indicators:
+                if indicator in url_lower:
+                    return False
+            
+            # Skip very small images (likely UI elements)
+            if 'w=16' in url_lower or 'h=16' in url_lower:
+                return False
+            if 'w=24' in url_lower or 'h=24' in url_lower:
+                return False
+            
+            # Prefer actual content domains
+            good_domains = [
+                'imgur.com', 'wikimedia.org', 'wordpress.com',
+                'blogspot.com', 'amazonaws.com', 'cloudinary.com'
+            ]
+            
+            # Accept Google thumbnail images (they're usually good)
+            if 'encrypted-tbn' in url_lower and 'gstatic.com' in url_lower:
+                return True
+            
+            # Check for good domains
+            for domain in good_domains:
+                if domain in url_lower:
+                    return True
+            
+            # Accept if it has clear image extension and reasonable length
+            if any(ext in url_lower for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
+                if len(url) > 30:  # Reasonable URL length
                     return True
             
             return False
