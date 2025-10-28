@@ -753,6 +753,86 @@ class Moderation(commands.Cog):
         except discord.Forbidden:
             await interaction.response.send_message("❌ Failed to remove timeout. Check my permissions.", ephemeral=True)
     
+    @app_commands.command(name='copy-permissions', description='Copy permissions from one channel to another')
+    @app_commands.describe(source_channel='Channel to copy permissions from', target_channel='Channel to apply permissions to')
+    async def slash_copy_permissions(self, interaction: discord.Interaction, source_channel: discord.TextChannel, target_channel: discord.TextChannel):
+        """Slash command to copy channel permissions"""
+        # Check permissions
+        if not interaction.guild:
+            await interaction.response.send_message("❌ This command can only be used in servers.", ephemeral=True)
+            return
+            
+        if not isinstance(interaction.user, discord.Member):
+            await interaction.response.send_message("❌ Could not verify your permissions.", ephemeral=True)
+            return
+            
+        if not has_admin_permissions(interaction.user, interaction.guild):
+            await interaction.response.send_message("❌ You need administrator permissions to copy channel permissions.", ephemeral=True)
+            return
+            
+        if not interaction.guild.me.guild_permissions.manage_channels:
+            await interaction.response.send_message("❌ I don't have permission to manage channels.", ephemeral=True)
+            return
+            
+        try:
+            await interaction.response.defer()
+            
+            # Get all permission overwrites from source channel
+            source_overwrites = source_channel.overwrites
+            
+            if not source_overwrites:
+                await interaction.followup.send("❌ The source channel has no custom permissions to copy.", ephemeral=True)
+                return
+            
+            # Clear existing overwrites on target channel (optional - comment out if you want to merge)
+            # await target_channel.edit(overwrites={})
+            
+            # Copy each permission overwrite
+            copied_count = 0
+            for role_or_member, permissions in source_overwrites.items():
+                try:
+                    await target_channel.set_permissions(role_or_member, overwrite=permissions)
+                    copied_count += 1
+                except discord.Forbidden:
+                    logger.warning(f"Could not set permissions for {role_or_member} in {target_channel.name}")
+                except Exception as e:
+                    logger.error(f"Error copying permissions for {role_or_member}: {e}")
+            
+            # Send confirmation
+            embed = discord.Embed(
+                title="✅ Permissions Copied",
+                description=f"Successfully copied permissions from **{source_channel.mention}** to **{target_channel.mention}**",
+                color=discord.Color.green()
+            )
+            embed.add_field(name="Permissions Copied", value=f"{copied_count} role/member overwrites", inline=False)
+            embed.add_field(name="Moderator", value=interaction.user.mention, inline=False)
+            
+            # List copied roles/members
+            if copied_count > 0:
+                copied_list = []
+                for role_or_member in list(source_overwrites.keys())[:10]:  # Show first 10
+                    if isinstance(role_or_member, discord.Role):
+                        copied_list.append(f"@{role_or_member.name}")
+                    else:
+                        copied_list.append(f"{role_or_member.name}")
+                
+                if copied_list:
+                    embed.add_field(
+                        name="Applied to",
+                        value=", ".join(copied_list) + ("..." if copied_count > 10 else ""),
+                        inline=False
+                    )
+            
+            await interaction.followup.send(embed=embed)
+            
+            logger.info(f"{interaction.user} copied permissions from {source_channel.name} to {target_channel.name}")
+            
+        except discord.Forbidden:
+            await interaction.followup.send("❌ Failed to copy permissions. Check my role hierarchy and permissions.", ephemeral=True)
+        except Exception as e:
+            logger.error(f"Error copying permissions: {e}")
+            await interaction.followup.send(f"❌ An error occurred while copying permissions: {str(e)}", ephemeral=True)
+    
     @app_commands.command(name='purge', description='Delete multiple messages from the channel')
     @app_commands.describe(amount='Number of messages to delete (1-100)')
     async def slash_purge(self, interaction: discord.Interaction, amount: int):
