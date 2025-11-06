@@ -72,12 +72,26 @@ Uses discord.py's slash command framework with:
   - `/copy-all-channels`: Copy all channels and roles from a source server (by ID) to the current server
   - `/copy-roles`: Copy all roles from source to target server
 
+**Per-Guild Embed Storage System** (`cogs/embed_builder.py`):
+- Embed IDs are now saved separately for each server instead of globally
+- New embeds are automatically stored in the server where they're created
+- Old embeds remain accessible through backwards-compatible fallback to "global" namespace
+- Commands that use embeds:
+  - `/embed`: Create and customize embeds with interactive builder
+  - `/embeds`: List all embeds saved in the current server
+  - `/viewembed`: View a specific saved embed
+  - `/deleteembed`: Delete a saved embed
+  - `/say`: Send a message or embed as the bot
+  - `/saychannel`: Send a message or embed to a specific channel
+  - `/dm`: Send a DM to a user
+
 **November 6, 2025 Updates**:
 - Fixed `/copy-all-channels` to correctly treat the provided server ID as the SOURCE and the execution location as the TARGET
 - Added automatic role copying before channel copying to ensure all permissions are preserved
 - Implemented case-insensitive role name matching to handle role name variations
 - Added role position preservation to maintain role hierarchy and permission inheritance
 - Updated command descriptions for clarity
+- Implemented per-guild embed storage with backwards compatibility for legacy embeds
 
 ### Event Handling
 Event-driven architecture handling:
