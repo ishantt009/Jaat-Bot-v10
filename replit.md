@@ -2,7 +2,7 @@
 
 ## Overview
 
-A Python-based Discord bot built with the discord.py library featuring basic command handling, event management, and message processing capabilities. The bot provides essential functionality including ping commands, help systems, welcome messages, and comprehensive logging. The architecture follows a modular design pattern separating configuration, commands, events, and main application logic into distinct modules.
+A Python-based Discord bot built with the discord.py library featuring comprehensive command handling, event management, and server management capabilities. The bot provides extensive functionality including server cloning, moderation tools, mass messaging, giveaways, role management, AI chat integration, and more. The architecture follows a modular cog-based design pattern with each feature organized into separate cogs for maintainability.
 
 ## User Preferences
 
@@ -11,11 +11,25 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Application Structure
-The bot follows a modular architecture with clear separation of concerns:
-- **Main Entry Point** (`main.py`): Custom bot class extending discord.py's commands.Bot with proper intent configuration
-- **Commands Module** (`bot/commands.py`): Centralized command handlers using discord.py's command framework
-- **Events Module** (`bot/events.py`): Event listeners for Discord events like guild joins and message handling
-- **Configuration Module** (`bot/config.py`): Environment-based configuration management with validation
+The bot follows a modular cog-based architecture with clear separation of concerns:
+- **Main Entry Point** (`main.py`): Custom bot class extending discord.py's commands.Bot with proper intent configuration and cog loading
+- **Cogs System** (`cogs/`): Each feature is organized into separate cog files:
+  - `server_clone.py`: Server channel and permission cloning between servers
+  - `moderation.py`: Moderation tools (kick, ban, timeout, purge)
+  - `roles.py`: Role management and mass role assignment
+  - `mass_dm.py`: Mass messaging capabilities
+  - `giveaways.py`: Giveaway management system
+  - `warnings.py`: User warning system
+  - `afk.py`: AFK status management
+  - `ai_chat.py`: AI chat integration with OpenAI
+  - `embed_builder.py`: Custom embed creation
+  - `quota_system.py`: Staff quota tracking
+  - `sensitive.py`: Sensitive content management
+  - `image_search.py`: Image and video search functionality
+  - `spinwheel.py`: Spinwheel feature
+  - `settings.py`: Server settings management
+  - `general.py`: General utility commands
+- **Utilities** (`utils/`): Shared utility functions and logging configuration
 
 ### Framework Choice
 Built on discord.py library which provides:
@@ -37,11 +51,25 @@ Implements dual logging approach:
 - Structured logging format with timestamps and log levels
 
 ### Command System
-Uses discord.py's command framework with:
-- Decorator-based command registration
+Uses discord.py's slash command framework with:
+- App command (slash command) registration via `@app_commands.command()` decorators
 - Embed-based responses for rich message formatting
-- Error handling and validation built into command structure
-- Modular command organization for easy maintenance
+- Permission checks and validation built into command structure
+- Modular cog-based organization for easy maintenance and hot-reloading
+
+### Recent Features (November 2025)
+
+**Server Cloning System** (`cogs/server_clone.py`):
+- Copy individual channels between servers with full permission preservation
+- Copy all channels from one server to another
+- Copy roles between servers
+- Automatic permission mapping by role names
+- Support for all channel types: text, voice, stage, categories, and forums
+- Administrator permission requirements for both source and target servers
+- Commands:
+  - `/copy_channel`: Copy a single channel to another server
+  - `/copy_all_channels`: Copy all channels from source to target server
+  - `/copy_roles`: Copy all roles from source to target server
 
 ### Event Handling
 Event-driven architecture handling:
