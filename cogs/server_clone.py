@@ -25,16 +25,16 @@ class ServerClone(commands.Cog):
         Args:
             source_overwrites: Original overwrites from source channel
             target_guild: Target guild to map to
-            role_mapping: Optional pre-built role name to role object mapping
+            role_mapping: Optional pre-built role name to role object mapping (case-insensitive)
             
         Returns:
             Dictionary of mapped overwrites for target guild
         """
         new_overwrites = {}
         
-        # Build role mapping if not provided
+        # Build role mapping if not provided (case-insensitive)
         if role_mapping is None:
-            role_mapping = {role.name: role for role in target_guild.roles}
+            role_mapping = {role.name.lower(): role for role in target_guild.roles}
         
         for entity, overwrite in source_overwrites.items():
             if isinstance(entity, discord.Role):
@@ -42,8 +42,8 @@ class ServerClone(commands.Cog):
                 if entity.name == "@everyone":
                     new_overwrites[target_guild.default_role] = overwrite
                 else:
-                    # Match by role name
-                    target_role = role_mapping.get(entity.name)
+                    # Match by role name (case-insensitive)
+                    target_role = role_mapping.get(entity.name.lower())
                     if target_role:
                         new_overwrites[target_role] = overwrite
                     else:
@@ -261,8 +261,8 @@ class ServerClone(commands.Cog):
                 await interaction.followup.send("❌ You need Administrator permissions in the target server.")
                 return
             
-            # Build role mapping
-            role_mapping = {role.name: role for role in target_guild.roles}
+            # Build case-insensitive role mapping
+            role_mapping = {role.name.lower(): role for role in target_guild.roles}
             
             # Copy the channel based on type
             if isinstance(channel, discord.TextChannel):
@@ -297,24 +297,24 @@ class ServerClone(commands.Cog):
             logger.error(f"Error copying channel: {e}")
             await interaction.followup.send(f"❌ An error occurred: {str(e)}")
     
-    @app_commands.command(name="copy-all-channels", description="Copy all channels from this server to another")
+    @app_commands.command(name="copy-all-channels", description="Copy all channels from another server to this server")
     @app_commands.describe(
-        target_server_id="The ID of the target server"
+        source_server_id="The ID of the source server to copy from"
     )
     async def copy_all_channels(
         self,
         interaction: discord.Interaction,
-        target_server_id: str
+        source_server_id: str
     ):
         """Copy all channels from source server to target server"""
         await interaction.response.defer()
         
         try:
-            target_guild_id = int(target_server_id)
-            target_guild = self.bot.get_guild(target_guild_id)
+            source_guild_id = int(source_server_id)
+            source_guild = self.bot.get_guild(source_guild_id)
             
-            if not target_guild:
-                await interaction.followup.send("❌ Target server not found. Make sure the bot is in that server.")
+            if not source_guild:
+                await interaction.followup.send("❌ Source server not found. Make sure the bot is in that server.")
                 return
             
             # Check permissions
@@ -322,9 +322,11 @@ class ServerClone(commands.Cog):
                 await interaction.followup.send("❌ This command must be used in a server.")
                 return
             
+            target_guild = interaction.guild
+            
             # Fetch members to handle cache misses
             try:
-                source_member = await interaction.guild.fetch_member(interaction.user.id)
+                source_member = await source_guild.fetch_member(interaction.user.id)
             except discord.NotFound:
                 await interaction.followup.send("❌ You are not in the source server.")
                 return
@@ -343,10 +345,44 @@ class ServerClone(commands.Cog):
                 await interaction.followup.send("❌ You need Administrator permissions in the target server.")
                 return
             
-            source_guild = interaction.guild
+            # First, copy roles to preserve permissions
+            existing_role_names = {role.name.lower() for role in target_guild.roles}
+            sorted_roles = sorted(source_guild.roles, key=lambda r: r.position)
+            copied_roles = 0
+            new_roles = []
             
-            # Build role mapping
-            role_mapping = {role.name: role for role in target_guild.roles}
+            for role in sorted_roles:
+                if role.name == "@everyone" or role.name.lower() in existing_role_names:
+                    continue
+                try:
+                    new_role = await target_guild.create_role(
+                        name=role.name,
+                        permissions=role.permissions,
+                        colour=role.colour,
+                        hoist=role.hoist,
+                        mentionable=role.mentionable
+                    )
+                    new_roles.append((new_role, role.position))
+                    copied_roles += 1
+                    await asyncio.sleep(0.3)
+                except Exception as e:
+                    logger.error(f"Failed to copy role {role.name}: {e}")
+            
+            # Adjust role positions to preserve hierarchy
+            if new_roles:
+                try:
+                    positions = {}
+                    for new_role, original_position in new_roles:
+                        positions[new_role] = original_position
+                    await target_guild.edit_role_positions(positions)
+                except Exception as e:
+                    logger.warning(f"Failed to adjust role positions: {e}")
+            
+            # Refresh target guild to get newly created roles
+            await target_guild.chunk()
+            
+            # Build case-insensitive role mapping with fresh role data
+            role_mapping = {role.name.lower(): role for role in target_guild.roles}
             
             # Track statistics
             copied_categories = 0
@@ -398,8 +434,9 @@ class ServerClone(commands.Cog):
                         failed += 1
             
             # Build summary
-            summary = f"✅ **Channel Copy Complete!**\n\n"
+            summary = f"✅ **Copy Complete!**\n\n"
             summary += f"📊 **Summary:**\n"
+            summary += f"• Roles: {copied_roles}\n"
             summary += f"• Categories: {copied_categories}\n"
             summary += f"• Text Channels: {copied_text}\n"
             summary += f"• Voice Channels: {copied_voice}\n"
@@ -410,7 +447,7 @@ class ServerClone(commands.Cog):
             if failed > 0:
                 summary += f"• Failed: {failed}\n"
             
-            summary += f"\n✨ All channels have been copied to **{target_guild.name}**!"
+            summary += f"\n✨ All roles and channels have been copied from **{source_guild.name}** to **{target_guild.name}**!"
             
             await interaction.followup.send(summary)
             
