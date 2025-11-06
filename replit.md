@@ -61,15 +61,23 @@ Uses discord.py's slash command framework with:
 
 **Server Cloning System** (`cogs/server_clone.py`):
 - Copy individual channels between servers with full permission preservation
-- Copy all channels from one server to another
+- Copy all channels from one server to another with automatic role copying
 - Copy roles between servers
-- Automatic permission mapping by role names
+- Case-insensitive role name mapping for accurate permission preservation
+- Role hierarchy preservation to maintain permission inheritance
 - Support for all channel types: text, voice, stage, categories, and forums
 - Administrator permission requirements for both source and target servers
 - Commands:
-  - `/copy_channel`: Copy a single channel to another server
-  - `/copy_all_channels`: Copy all channels from source to target server
-  - `/copy_roles`: Copy all roles from source to target server
+  - `/copy-channel`: Copy a single channel to another server
+  - `/copy-all-channels`: Copy all channels and roles from a source server (by ID) to the current server
+  - `/copy-roles`: Copy all roles from source to target server
+
+**November 6, 2025 Updates**:
+- Fixed `/copy-all-channels` to correctly treat the provided server ID as the SOURCE and the execution location as the TARGET
+- Added automatic role copying before channel copying to ensure all permissions are preserved
+- Implemented case-insensitive role name matching to handle role name variations
+- Added role position preservation to maintain role hierarchy and permission inheritance
+- Updated command descriptions for clarity
 
 ### Event Handling
 Event-driven architecture handling:
