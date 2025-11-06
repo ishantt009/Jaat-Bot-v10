@@ -189,6 +189,8 @@ class AIChat(commands.Cog):
                 logger.info(f"AI responded to {message.author} in #{message.channel.name}")
             except discord.HTTPException as e:
                 logger.error(f"Failed to send AI response: {e}")
+        
+        await self.bot.process_commands(message)
     
     @commands.hybrid_command(name='ai-enable')
     @app_commands.describe(channel="Channel to enable AI chat in (default: current channel)")

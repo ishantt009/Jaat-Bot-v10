@@ -222,6 +222,8 @@ class AFK(commands.Cog):
                 await message.channel.send(embed=embed, delete_after=15)
             except:
                 pass
+        
+        await self.bot.process_commands(message)
 
 async def setup(bot):
     await bot.add_cog(AFK(bot))
