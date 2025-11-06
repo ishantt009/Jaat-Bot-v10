@@ -213,7 +213,7 @@ class ServerClone(commands.Cog):
         
         return new_category
     
-    @app_commands.command(name="copy_channel", description="Copy a channel to another server")
+    @app_commands.command(name="copy-channel", description="Copy a channel to another server")
     @app_commands.describe(
         channel="The channel to copy",
         target_server_id="The ID of the target server"
@@ -297,7 +297,7 @@ class ServerClone(commands.Cog):
             logger.error(f"Error copying channel: {e}")
             await interaction.followup.send(f"❌ An error occurred: {str(e)}")
     
-    @app_commands.command(name="copy_all_channels", description="Copy all channels from this server to another")
+    @app_commands.command(name="copy-all-channels", description="Copy all channels from this server to another")
     @app_commands.describe(
         target_server_id="The ID of the target server"
     )
@@ -422,7 +422,7 @@ class ServerClone(commands.Cog):
             logger.error(f"Error copying all channels: {e}")
             await interaction.followup.send(f"❌ An error occurred: {str(e)}")
     
-    @app_commands.command(name="copy_roles", description="Copy roles from this server to another")
+    @app_commands.command(name="copy-roles", description="Copy roles from this server to another")
     @app_commands.describe(
         target_server_id="The ID of the target server"
     )
