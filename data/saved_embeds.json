@@ -1,40 +1,42 @@
 {
-  "6f039227": {
-    "id": "6f039227",
-    "name": "Embed 6f039227",
-    "created_by": 1265504464035381258,
-    "created_at": "2025-08-28T11:56:08.283315",
-    "data": {
-      "title": "\ud83d\udce2 ACE SERVICE \u2013 Trusted Blox Fruits Grinding!",
-      "description": "Tired of grinding for hours? Let us handle the hard work while you enjoy the rewards.\nOur team provides safe, fast, and reliable grinding services in Blox Fruits, trusted by many players.\n\n\u2705 Services\n\n\u2022 Level Up (Fast & Safe)\n\u2022 CDK / TTK\n\u2022 Dough King\n\u2022 Money Farm / Fragment Farm\n\u2022 Haki Colors Unlock\n\u2022 Mastery Grinding\n\u2022 Any Quest Completion\n\u2022 Raids & Trials\n\u2022 Leviathan Hunt\n\u2022 All Sea Hunts\n\n\ud83c\udfaf Level Up Plans\n\nSTARTER PLAN\nLevel 0 \u2192 700 | All Quests Done | Second Sea Unlock\n\nGOLD PLAN\nLevel 700 \u2192 1400 | TTK | All Quests Done | Third Sea Unlock\n\nDIAMOND PLAN\nLevel 1400 \u2192 Max | Observation V2 | Extra Quests\n\nMASTER PLAN\n0 \u2192 Max Level | All Basic Quests | 20M Cash | Random Mythical Sword\n\n\ud83d\udee1\ufe0f Why Choose Us?\n\n\ud83d\udd12 Privacy First \u2013 Your ID & Password stay 100% safe\n\ud83d\udcb3 Secure Payment \u2013 Pay first, play stress-free\n\ud83c\udfc6 Proven Service \u2013 6+ verified vouches from satisfied players\n\u26a1 Fast Delivery \u2013 No time wasted, just results\n\n\n\ud83d\udce9 For grinding or details, DM anytime!",
-      "color": 16711680,
-      "footer": "-TEAM FruitRide",
-      "footer_icon": null,
-      "author": null,
-      "author_icon": null,
-      "thumbnail": null,
-      "image": null,
-      "fields": [],
-      "timestamp": false
-    }
-  },
-  "853bec2f": {
-    "id": "853bec2f",
-    "name": "Embed 853bec2f",
-    "created_by": 1265504464035381258,
-    "created_at": "2025-09-10T13:08:55.740792",
-    "data": {
-      "title": "FRUIT RIDE PAID SERVICE",
-      "description": "Hi bro\nDo you know there is paid grinding facility on this server(fruiride) with affordable prices?\nThere is some discount on every type of grind in blox fruits if you want more info fell free to message me!\n\n**BRO\nSOME MORE BENEFITS ADDED IN OUR SERVICE**\n\n\u2022 If your purchase go higher like 1k then your role will be shown diff from other members!\n\n\u2022 If you\u2019ve gotten grinding done from us more than 3 times, you\u2019ll get Netflix + YouTube + Spotify Premium as a reward!\n\n\u2022 If you get any grinding done from here, you\u2019ll receive the client's role, which looks very cool!\n\n\u2022 If your purchase goes above \u20b9500, you\u2019ll get a 20% discount!\n\n\u2022 If there\u2019s any giveaway, clients gets it first!\n\n__SOME MORE__\n\n\u2705 100% Trusted & Verified Service\n\u2705 100% Safe & Natural Grinding (No risks)\n\u2705 Super Fast Delivery \u2013 grind in record time!\n\u2705 Affordable prices for everyone\n\u2705 24/7 Support \u2013 we\u2019re always available for you\n\u2705 Exclusive Client Role = VIP Treatment\n\u2705 More you purchase = More Rewards!\n\u2705 First come, first serve \u2192 Secure your spot quickly\n\u2705 Guaranteed Satisfaction or your money back\n\n\ud83d\udc49 Join our trusted client circle today, unlock premium perks, and enjoy rewards no one else gets. The more you grind, the more you gain!",
-      "color": 16753920,
-      "footer": null,
-      "footer_icon": null,
-      "author": null,
-      "author_icon": null,
-      "thumbnail": null,
-      "image": null,
-      "fields": [],
-      "timestamp": false
+  "global": {
+    "6f039227": {
+      "id": "6f039227",
+      "name": "Embed 6f039227",
+      "created_by": 1265504464035381258,
+      "created_at": "2025-08-28T11:56:08.283315",
+      "data": {
+        "title": "\ud83d\udce2 ACE SERVICE \u2013 Trusted Blox Fruits Grinding!",
+        "description": "Tired of grinding for hours? Let us handle the hard work while you enjoy the rewards.\nOur team provides safe, fast, and reliable grinding services in Blox Fruits, trusted by many players.\n\n\u2705 Services\n\n\u2022 Level Up (Fast & Safe)\n\u2022 CDK / TTK\n\u2022 Dough King\n\u2022 Money Farm / Fragment Farm\n\u2022 Haki Colors Unlock\n\u2022 Mastery Grinding\n\u2022 Any Quest Completion\n\u2022 Raids & Trials\n\u2022 Leviathan Hunt\n\u2022 All Sea Hunts\n\n\ud83c\udfaf Level Up Plans\n\nSTARTER PLAN\nLevel 0 \u2192 700 | All Quests Done | Second Sea Unlock\n\nGOLD PLAN\nLevel 700 \u2192 1400 | TTK | All Quests Done | Third Sea Unlock\n\nDIAMOND PLAN\nLevel 1400 \u2192 Max | Observation V2 | Extra Quests\n\nMASTER PLAN\n0 \u2192 Max Level | All Basic Quests | 20M Cash | Random Mythical Sword\n\n\ud83d\udee1\ufe0f Why Choose Us?\n\n\ud83d\udd12 Privacy First \u2013 Your ID & Password stay 100% safe\n\ud83d\udcb3 Secure Payment \u2013 Pay first, play stress-free\n\ud83c\udfc6 Proven Service \u2013 6+ verified vouches from satisfied players\n\u26a1 Fast Delivery \u2013 No time wasted, just results\n\n\n\ud83d\udce9 For grinding or details, DM anytime!",
+        "color": 16711680,
+        "footer": "-TEAM FruitRide",
+        "footer_icon": null,
+        "author": null,
+        "author_icon": null,
+        "thumbnail": null,
+        "image": null,
+        "fields": [],
+        "timestamp": false
+      }
+    },
+    "853bec2f": {
+      "id": "853bec2f",
+      "name": "Embed 853bec2f",
+      "created_by": 1265504464035381258,
+      "created_at": "2025-09-10T13:08:55.740792",
+      "data": {
+        "title": "FRUIT RIDE PAID SERVICE",
+        "description": "Hi bro\nDo you know there is paid grinding facility on this server(fruiride) with affordable prices?\nThere is some discount on every type of grind in blox fruits if you want more info fell free to message me!\n\n**BRO\nSOME MORE BENEFITS ADDED IN OUR SERVICE**\n\n\u2022 If your purchase go higher like 1k then your role will be shown diff from other members!\n\n\u2022 If you\u2019ve gotten grinding done from us more than 3 times, you\u2019ll get Netflix + YouTube + Spotify Premium as a reward!\n\n\u2022 If you get any grinding done from here, you\u2019ll receive the client's role, which looks very cool!\n\n\u2022 If your purchase goes above \u20b9500, you\u2019ll get a 20% discount!\n\n\u2022 If there\u2019s any giveaway, clients gets it first!\n\n__SOME MORE__\n\n\u2705 100% Trusted & Verified Service\n\u2705 100% Safe & Natural Grinding (No risks)\n\u2705 Super Fast Delivery \u2013 grind in record time!\n\u2705 Affordable prices for everyone\n\u2705 24/7 Support \u2013 we\u2019re always available for you\n\u2705 Exclusive Client Role = VIP Treatment\n\u2705 More you purchase = More Rewards!\n\u2705 First come, first serve \u2192 Secure your spot quickly\n\u2705 Guaranteed Satisfaction or your money back\n\n\ud83d\udc49 Join our trusted client circle today, unlock premium perks, and enjoy rewards no one else gets. The more you grind, the more you gain!",
+        "color": 16753920,
+        "footer": null,
+        "footer_icon": null,
+        "author": null,
+        "author_icon": null,
+        "thumbnail": null,
+        "image": null,
+        "fields": [],
+        "timestamp": false
+      }
     }
   }
 }

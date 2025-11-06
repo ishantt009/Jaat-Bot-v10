@@ -13,11 +13,12 @@ from utils.permissions import has_mod_permissions
 logger = logging.getLogger(__name__)
 
 class EmbedStorage:
-    """Manages saving and loading embeds with unique IDs"""
+    """Manages saving and loading embeds with unique IDs per guild"""
     
     def __init__(self):
         self.storage_file = "data/saved_embeds.json"
         self.ensure_storage_dir()
+        self.migrate_old_format()
     
     def ensure_storage_dir(self):
         """Ensure the data directory exists"""
@@ -26,15 +27,33 @@ class EmbedStorage:
             with open(self.storage_file, 'w') as f:
                 json.dump({}, f)
     
-    def save_embed(self, embed_data, name=None, user_id=None):
+    def migrate_old_format(self):
+        """Migrate old global format to per-guild format"""
+        try:
+            with open(self.storage_file, 'r') as f:
+                data = json.load(f)
+            
+            # Check if it's the old format (top level contains embed IDs directly)
+            if data and not all(isinstance(v, dict) and 'id' not in v for v in data.values() if isinstance(v, dict)):
+                # Old format detected - migrate to new format under "global" guild
+                new_data = {"global": data}
+                with open(self.storage_file, 'w') as f:
+                    json.dump(new_data, f, indent=2)
+                logger.info("Migrated old embed format to new per-guild structure")
+        except Exception as e:
+            logger.error(f"Error migrating embed format: {e}")
+    
+    def save_embed(self, embed_data, name=None, user_id=None, guild_id=None):
         """Save an embed and return its unique ID"""
         embed_id = str(uuid.uuid4())[:8]  # Short 8-character ID
+        guild_key = str(guild_id) if guild_id else "global"
         
         embed_dict = {
             'id': embed_id,
             'name': name or f"Embed {embed_id}",
             'created_by': user_id,
             'created_at': datetime.now().isoformat(),
+            'guild_id': guild_id,
             'data': {
                 'title': embed_data.title,
                 'description': embed_data.description,
@@ -52,33 +71,54 @@ class EmbedStorage:
         
         # Load existing embeds
         with open(self.storage_file, 'r') as f:
-            embeds = json.load(f)
+            all_embeds = json.load(f)
+        
+        # Ensure guild key exists
+        if guild_key not in all_embeds:
+            all_embeds[guild_key] = {}
         
         # Save new embed
-        embeds[embed_id] = embed_dict
+        all_embeds[guild_key][embed_id] = embed_dict
         
         with open(self.storage_file, 'w') as f:
-            json.dump(embeds, f, indent=2)
+            json.dump(all_embeds, f, indent=2)
         
         return embed_id
     
-    def load_embed(self, embed_id):
-        """Load an embed by ID"""
+    def load_embed(self, embed_id, guild_id=None):
+        """Load an embed by ID for a specific guild with fallback to global"""
         try:
             with open(self.storage_file, 'r') as f:
-                embeds = json.load(f)
+                all_embeds = json.load(f)
             
-            if embed_id in embeds:
-                return embeds[embed_id]
+            guild_key = str(guild_id) if guild_id else "global"
+            
+            # First try guild-specific lookup
+            if guild_key in all_embeds and embed_id in all_embeds[guild_key]:
+                return all_embeds[guild_key][embed_id]
+            
+            # Fallback to global for backwards compatibility with migrated embeds
+            if guild_id and "global" in all_embeds and embed_id in all_embeds["global"]:
+                return all_embeds["global"][embed_id]
+            
             return None
         except:
             return None
     
-    def get_all_embeds(self, user_id=None):
-        """Get all saved embeds, optionally filtered by user"""
+    def get_all_embeds(self, guild_id=None, user_id=None):
+        """Get all saved embeds for a guild with fallback to global, optionally filtered by user"""
         try:
             with open(self.storage_file, 'r') as f:
-                embeds = json.load(f)
+                all_embeds = json.load(f)
+            
+            guild_key = str(guild_id) if guild_id else "global"
+            embeds = all_embeds.get(guild_key, {}).copy()
+            
+            # Merge in global embeds for backwards compatibility with migrated embeds
+            if guild_id and "global" in all_embeds:
+                for embed_id, embed_data in all_embeds["global"].items():
+                    if embed_id not in embeds:  # Don't override guild-specific embeds
+                        embeds[embed_id] = embed_data
             
             if user_id:
                 return {k: v for k, v in embeds.items() if v.get('created_by') == user_id}
@@ -86,33 +126,49 @@ class EmbedStorage:
         except:
             return {}
     
-    def delete_embed(self, embed_id, user_id=None):
-        """Delete an embed by ID"""
+    def delete_embed(self, embed_id, guild_id=None, user_id=None):
+        """Delete an embed by ID for a specific guild with fallback to global"""
         try:
             with open(self.storage_file, 'r') as f:
-                embeds = json.load(f)
+                all_embeds = json.load(f)
             
-            if embed_id in embeds:
+            guild_key = str(guild_id) if guild_id else "global"
+            
+            # First try guild-specific lookup
+            if guild_key in all_embeds and embed_id in all_embeds[guild_key]:
                 # Check if user owns the embed or is authorized
-                embed_data = embeds[embed_id]
+                embed_data = all_embeds[guild_key][embed_id]
                 if user_id and embed_data.get('created_by') != user_id:
                     return False, "You can only delete embeds you created."
                 
-                del embeds[embed_id]
+                del all_embeds[guild_key][embed_id]
                 
                 with open(self.storage_file, 'w') as f:
-                    json.dump(embeds, f, indent=2)
+                    json.dump(all_embeds, f, indent=2)
                 
                 return True, "Embed deleted successfully."
             
-            return False, "Embed not found."
+            # Fallback to global for backwards compatibility with migrated embeds
+            if guild_id and "global" in all_embeds and embed_id in all_embeds["global"]:
+                embed_data = all_embeds["global"][embed_id]
+                if user_id and embed_data.get('created_by') != user_id:
+                    return False, "You can only delete embeds you created."
+                
+                del all_embeds["global"][embed_id]
+                
+                with open(self.storage_file, 'w') as f:
+                    json.dump(all_embeds, f, indent=2)
+                
+                return True, "Embed deleted successfully."
+            
+            return False, "Embed not found in this server."
         except:
             return False, "Error deleting embed."
 
 # Global embed storage instance
 embed_storage = EmbedStorage()
 
-def add_embed_id(embed, save_permanently=False, user_id=None):
+def add_embed_id(embed, save_permanently=False, user_id=None, guild_id=None):
     """Add an ID to any embed. Optionally save permanently."""
     if save_permanently and user_id:
         # For user-created embeds, save permanently
@@ -133,7 +189,7 @@ def add_embed_id(embed, save_permanently=False, user_id=None):
         embed_data.fields = [{'name': f.name, 'value': f.value, 'inline': f.inline} for f in embed.fields]
         embed_data.timestamp = embed.timestamp is not None
         
-        embed_id = embed_storage.save_embed(embed_data, user_id=user_id)
+        embed_id = embed_storage.save_embed(embed_data, user_id=user_id, guild_id=guild_id)
     else:
         # For system embeds, generate temporary ID
         embed_id = str(uuid.uuid4())[:6]  # Shorter ID for system embeds
@@ -562,8 +618,9 @@ class EmbedBuilderView(discord.ui.View):
             await interaction.response.send_message("❌ Embed must have at least a title, description, or fields!", ephemeral=True)
             return
         
-        # Save embed with ID
-        embed_id = embed_storage.save_embed(self.embed_data, user_id=interaction.user.id)
+        # Save embed with ID for this guild
+        guild_id = interaction.guild.id if interaction.guild else None
+        embed_id = embed_storage.save_embed(self.embed_data, user_id=interaction.user.id, guild_id=guild_id)
         
         embed = self.embed_data.to_embed()
         embed.set_footer(text=f"{embed.footer.text if embed.footer else ''} • ID: {embed_id}".strip(" • "))
@@ -682,7 +739,8 @@ class EmbedBuilder(commands.Cog):
             return
         
         # Parse message or embed ID
-        msg_type, content, embed_id = self.parse_message_or_embed(message)
+        guild_id = ctx.guild.id if ctx.guild else None
+        msg_type, content, embed_id = self.parse_message_or_embed(message, guild_id=guild_id)
         
         if msg_type == 'error':
             embed = discord.Embed(
@@ -755,12 +813,13 @@ class EmbedBuilder(commands.Cog):
         # Parse message content to check for embed ID
         if message.lower().startswith('embed:'):
             embed_id = message[6:].strip()
-            saved_embed_data = embed_storage.load_embed(embed_id)
+            guild_id = ctx.guild.id if ctx.guild else None
+            saved_embed_data = embed_storage.load_embed(embed_id, guild_id=guild_id)
             
             if not saved_embed_data:
                 embed = discord.Embed(
                     title="❌ Embed Not Found",
-                    description=f"Embed with ID `{embed_id}` not found.",
+                    description=f"Embed with ID `{embed_id}` not found in this server.",
                     color=discord.Color.red()
                 )
                 await ctx.send(embed=embed, ephemeral=True)
@@ -897,7 +956,8 @@ class EmbedBuilder(commands.Cog):
             return
         
         # Parse message or embed ID
-        msg_type, content, embed_id = self.parse_message_or_embed(message)
+        guild_id = ctx.guild.id if ctx.guild else None
+        msg_type, content, embed_id = self.parse_message_or_embed(message, guild_id=guild_id)
         
         if msg_type == 'error':
             embed = discord.Embed(
@@ -976,11 +1036,11 @@ class EmbedBuilder(commands.Cog):
             )
             await ctx.send(embed=embed, ephemeral=True)
     
-    def parse_message_or_embed(self, message_text):
+    def parse_message_or_embed(self, message_text, guild_id=None):
         """Parse message text to check if it's an embed ID or regular text"""
         if message_text.startswith('embed:'):
             embed_id = message_text[6:].strip()
-            embed_data = embed_storage.load_embed(embed_id)
+            embed_data = embed_storage.load_embed(embed_id, guild_id=guild_id)
             if embed_data:
                 # Convert back to EmbedData object
                 data = embed_data['data']
@@ -1003,14 +1063,14 @@ class EmbedBuilder(commands.Cog):
                 embed.set_footer(text=f"{current_footer} • ID: {embed_id}".strip(" • "))
                 return ('embed', embed, embed_id)
             else:
-                return ('error', f"❌ Embed ID `{embed_id}` not found.", None)
+                return ('error', f"❌ Embed ID `{embed_id}` not found in this server.", None)
         else:
             return ('text', message_text, None)
     
     @commands.hybrid_command(name='embeds')
     @commands.guild_only()
     async def list_embeds(self, ctx):
-        """List your saved embeds"""
+        """List all saved embeds for this server"""
         if not has_mod_permissions(ctx.author, ctx.guild):
             embed = discord.Embed(
                 title="❌ Missing Permissions",
@@ -1020,7 +1080,8 @@ class EmbedBuilder(commands.Cog):
             await ctx.send(embed=embed, ephemeral=True)
             return
         
-        user_embeds = embed_storage.get_all_embeds(ctx.author.id)
+        guild_id = ctx.guild.id if ctx.guild else None
+        user_embeds = embed_storage.get_all_embeds(guild_id=guild_id, user_id=ctx.author.id)
         
         if not user_embeds:
             embed = discord.Embed(
@@ -1075,7 +1136,8 @@ class EmbedBuilder(commands.Cog):
             await ctx.send(embed=embed, ephemeral=True)
             return
         
-        embed_data = embed_storage.load_embed(embed_id)
+        guild_id = ctx.guild.id if ctx.guild else None
+        embed_data = embed_storage.load_embed(embed_id, guild_id=guild_id)
         
         if not embed_data:
             embed = discord.Embed(
@@ -1127,7 +1189,8 @@ class EmbedBuilder(commands.Cog):
             await ctx.send(embed=embed, ephemeral=True)
             return
         
-        success, message = embed_storage.delete_embed(embed_id, ctx.author.id)
+        guild_id = ctx.guild.id if ctx.guild else None
+        success, message = embed_storage.delete_embed(embed_id, guild_id=guild_id, user_id=ctx.author.id)
         
         embed = discord.Embed(
             title="✅ Success" if success else "❌ Error",
